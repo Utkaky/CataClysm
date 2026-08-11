@@ -2975,8 +2975,8 @@ function ElementFunction:AddPlayersDropdown(DropdownConfig)
             if Dropdown.Value == pName then
                 if DropdownConfig.PlrLeftNote then
                     OrionLib:MakeNotification({
-                        Name = "Jogador selecionado saiu",
-                        Content = p.DisplayName .. " saiu do jogo.",
+                        Name = "You Target Left",
+                        Content = p.DisplayName .. " left.",
                         Image = "rbxassetid://7733911828",
                         Time = 5
                     })
