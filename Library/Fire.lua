@@ -503,12 +503,55 @@ local NotificationHolder = SetProps(SetChildren(MakeElement("TFrame"), {
 	Parent = Orion
 })
 
+local LucideOK, Lucide = pcall(function()
+	return loadstring(game:HttpGet("https://raw.githubusercontent.com/Utkaky/Main/refs/heads/main/ObsidianLib/Icons.lua"))()
+end)
+
+if not LucideOK then
+	warn("[OrionLib] Failed To Load Lucide Icons: " .. tostring(Lucide))
+	Lucide = nil
+end
+
+function ResolveNotificationIcon(image)
+	if type(image) == "string" and (image:match("^rbxassetid://") or image:match("^%d+$")) then
+		return {
+			Url = image,
+			ImageRectOffset = Vector2.new(0, 0),
+			ImageRectSize = Vector2.new(0, 0)
+		}
+	end
+
+	if Lucide then
+		local ok, lucideIcon = pcall(Lucide.GetAsset, image)
+		if ok and lucideIcon then
+			return {
+				Url = lucideIcon.Url,
+				ImageRectOffset = lucideIcon.ImageRectOffset,
+				ImageRectSize = lucideIcon.ImageRectSize
+			}
+		elseif ok and not lucideIcon then
+			warn("[OrionLib] Ícone Lucide não encontrado: " .. tostring(image))
+		else
+			warn("[OrionLib] Erro ao buscar ícone Lucide: " .. tostring(lucideIcon))
+		end
+	end
+
+	return {
+		Url = "rbxassetid://4384403532",
+		ImageRectOffset = Vector2.new(0, 0),
+		ImageRectSize = Vector2.new(0, 0)
+	}
+end
+
 function OrionLib:MakeNotification(NotificationConfig)
 	task.spawn(function()
 		NotificationConfig.Name = NotificationConfig.Name or "Notification"
 		NotificationConfig.Content = NotificationConfig.Content or "Test"
 		NotificationConfig.Image = NotificationConfig.Image or "rbxassetid://4384403532"
-		game:GetService("ContentProvider"):PreloadAsync({NotificationConfig.Image})
+
+		local ResolvedIcon = ResolveNotificationIcon(NotificationConfig.Image)
+
+		game:GetService("ContentProvider"):PreloadAsync({ResolvedIcon.Url})
 		NotificationConfig.Time = NotificationConfig.Time or 15
 
 		local NotificationParent = SetProps(MakeElement("TFrame"), {
@@ -525,9 +568,11 @@ function OrionLib:MakeNotification(NotificationConfig)
 			AutomaticSize = Enum.AutomaticSize.Y
 		}), {
 			MakeElement("Padding", 16, 12, 12, 12),
-			AddThemeObject(SetProps(MakeElement("Image", NotificationConfig.Image), {
+			AddThemeObject(SetProps(MakeElement("Image", ResolvedIcon.Url), {
 				Size = UDim2.new(0, 20, 0, 20),
 				ImageColor3 = Color3.fromRGB(240, 240, 240),
+				ImageRectOffset = ResolvedIcon.ImageRectOffset,
+				ImageRectSize = ResolvedIcon.ImageRectSize,
 				Name = "Icon"
 			}), "Text"),
 			AddThemeObject(SetProps(MakeElement("Label", NotificationConfig.Name, 15), {
@@ -561,7 +606,7 @@ function OrionLib:MakeNotification(NotificationConfig)
 		task.wait(1.35)
 		NotificationFrame:Destroy()
 	end)
-end   
+end
 
 function OrionLib:Init()
 	if OrionLib.SaveCfg and (isfile and readfile) then	
@@ -2419,888 +2464,1444 @@ function OrionLib:MakeWindow(WindowConfig)
 				if SliderConfig.Flag then OrionLib.Flags[SliderConfig.Flag] = s end
 				return s
 			end
-			
-			function ElementFunction:AddDropdown(DropdownConfig)
-				DropdownConfig = DropdownConfig or {}
-				DropdownConfig.Name = DropdownConfig.Name or "Dropdown"
-				DropdownConfig.Options = DropdownConfig.Options or {}
-				DropdownConfig.Default = DropdownConfig.Default or ""
-				DropdownConfig.Multi = DropdownConfig.Multi or false
-				DropdownConfig.Call = DropdownConfig.Call or false
-				DropdownConfig.Searchable = DropdownConfig.Searchable or false
-				DropdownConfig.Grouped = DropdownConfig.Grouped or false
-				DropdownConfig.Icons = DropdownConfig.Icons or false
-				DropdownConfig.MaxHeight = DropdownConfig.MaxHeight or 200
-				DropdownConfig.PlrLeftNote = DropdownConfig.PlrLeftNote or false
-				DropdownConfig.Callback = DropdownConfig.Callback or function() end
-				DropdownConfig.Flag = DropdownConfig.Flag or nil
-				DropdownConfig.Save = DropdownConfig.Save or false
-			
-				local Dropdown = {
-					Value = DropdownConfig.Multi and {} or DropdownConfig.Default,
-					Options = DropdownConfig.Options,
-					filOptns = {},
-					Buttons = {},
-					Groups = {},
-					Toggled = false,
-					srchTxt = "",
-					srchMode = false,
-					Type = "Dropdown",
-					Save = DropdownConfig.Save,
-					isPDrop = false,
-					Multi = DropdownConfig.Multi
-				}
-				
-				local function DtctPDrop()
-					for _, option in pairs(DropdownConfig.Options) do
-						local optTxt = type(option) == "table" and (option.text or option.name) or tostring(option)
-						local pName = optTxt:match("^(.-) %(") or optTxt
-						
-						if vgs and vgs.ps and vgs.ps:FindFirstChild(pName) then
-							return true
-						end
-					end
-					return false
-				end
-			
-				Dropdown.isPDrop = DtctPDrop()
-				local MaxElems = 5
-			
-				if not table.find(Dropdown.Options, Dropdown.Value) and not DropdownConfig.Multi then
-					Dropdown.Value = "..."
-				end
-			
-				local DdList = MakeElement("List")
-				local SrchBox, SrchCont, SrchTgl
-				
-				local function relfcs()
-					if DropdownConfig.Searchable and SrchBox and SrchBox:IsFocused() then
-						SrchBox:ReleaseFocus()
-					end
-				end
-			
-				if DropdownConfig.Searchable then
-					SrchTgl = AddThemeObject(SetChildren(SetProps(MakeElement("Button", Color3.fromRGB(255,255,255)), {
-						Size = UDim2.new(1, -16, 0, 26),
-						Position = UDim2.new(0, 8, 0, 43),
-						Visible = false,
-						Name = "SearchToggle",
-						BackgroundTransparency = 1
-					}), {
-						AddThemeObject(SetProps(MakeElement("Frame"), {
-							Size = UDim2.new(1, -30, 0, 1),
-							Position = UDim2.new(0, 0, 0.5, 0),
-							AnchorPoint = Vector2.new(0, 0.5),
-							Name = "SearchLine"
-						}), "Stroke"),
-						AddThemeObject(SetProps(MakeElement("Image", "rbxassetid://7072706796"), {
-							Size = UDim2.new(0, 16, 0, 16),
-							Position = UDim2.new(1, -20, 0.5, 0),
-							AnchorPoint = Vector2.new(0, 0.5),
-							ImageColor3 = Color3.fromRGB(160, 160, 160),
-							Rotation = 180,
-							Name = "SearchArrow"
-						}), "TextDark")
-					}), "Main")
-			
-					SrchBox = SetProps(MakeElement("TextBox"), {
-						Size = UDim2.new(1, -16, 1, -6),
-						Position = UDim2.new(0, 8, 0, 3),
-						BackgroundTransparency = 1,
-						TextColor3 = Color3.fromRGB(255, 255, 255),
-						PlaceholderColor3 = Color3.fromRGB(140, 140, 140),
-						PlaceholderText = "Search...",
-						Font = Enum.Font.Gotham,
-						TextSize = 13,
-						Text = "",
-						TextXAlignment = Enum.TextXAlignment.Left
-					})
-			
-					SrchCont = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255,255,255),0,6), {
-						Size = UDim2.new(1, -16, 0, 26),
-						Position = UDim2.new(0, 8, 0, 74),
-						Visible = false,
-						Name = "SearchContainer"
-					}), {AddThemeObject(MakeElement("Stroke"), "Stroke"), SrchBox}), "Main")
-				end
-			
-				local DdCont = AddThemeObject(SetProps(SetChildren(MakeElement("ScrollFrame", Color3.fromRGB(40, 40, 40), 4), {
-					DdList
-				}), {
-					Parent = ItemParent,
-					Position = UDim2.new(0, 0, 0, 38),
-					Size = UDim2.new(1, 0, 1, -38),
-					ClipsDescendants = true,
-					Visible = false,
-					ScrollBarImageTransparency = 1 
-				}), "Divider")
-			
-				local Click = SetProps(MakeElement("Button"), {
-					Size = UDim2.new(1, 0, 1, 0)
-				})
-			
-				local DdFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 5), {
-					Size = UDim2.new(1, 0, 0, 38),
-					Parent = ItemParent,
-					ClipsDescendants = true
-				}), {
-					DropdownConfig.Searchable and SrchTgl or MakeElement("TFrame"),
-					DropdownConfig.Searchable and SrchCont or MakeElement("TFrame"),
-					DdCont,
-					SetProps(SetChildren(MakeElement("TFrame"), {
-						AddThemeObject(SetProps(MakeElement("Label", DropdownConfig.Name, 15), {
-							Size = UDim2.new(1, -12, 1, 0),
-							Position = UDim2.new(0, 12, 0, 0),
-							Font = Enum.Font.GothamBold,
-							Name = "Content"
-						}), "Text"),
-						AddThemeObject(SetProps(MakeElement("Image", "rbxassetid://7072706796"), {
-							Size = UDim2.new(0, 20, 0, 20),
-							AnchorPoint = Vector2.new(0, 0.5),
-							Position = UDim2.new(1, -30, 0.5, 0),
-							ImageColor3 = Color3.fromRGB(240, 240, 240),
-							Name = "Arrow"
-						}), "TextDark"),
-						AddThemeObject(SetProps(MakeElement("Label", "Select option", 13), {
-							Size = UDim2.new(1, -160, 1, 0),
-							Position = UDim2.new(0, 120, 0, 0),
-							Font = Enum.Font.Gotham,
-							Name = "Selected",
-							TextXAlignment = Enum.TextXAlignment.Right,
-							TextTruncate = Enum.TextTruncate.AtEnd
-						}), "TextDark"),
-						AddThemeObject(SetProps(MakeElement("Frame"), {
-							Size = UDim2.new(1, 0, 0, 1),
-							Position = UDim2.new(0, 0, 1, -1),
-							Name = "Line",
-							Visible = false
-						}), "Stroke"),
-						Click
-					}), {
-						Size = UDim2.new(1, 0, 0, 38),
-						ClipsDescendants = true,
-						Name = "Header"
-					}),
-					AddThemeObject(MakeElement("Stroke"), "Stroke"),
-					MakeElement("Corner")
-				}), "Second")
-			
-				Relem(_tabName, DropdownConfig.Name, DdFrame)
-				AddConnection(DdList:GetPropertyChangedSignal("AbsoluteContentSize"), function()
-					DdCont.CanvasSize = UDim2.new(0, 0, 0, DdList.AbsoluteContentSize.Y)
-				end)
-				
-				local vconn = AddConnection(MainWindow:GetPropertyChangedSignal("Visible"), function()
-					if not MainWindow.Visible then
-						relfcs()
-						if Dropdown.Toggled then
-							Dropdown.Toggled = false
-							Dropdown.srchMode = false
-							Dropdown:UpdVis()
-						end
-					end
-				end)
-				
-				AddConnection(DdFrame.Destroying, function()
-					if vconn and vconn.Connected then
-						vconn:Disconnect()
-					end
-				end)
-				
-				local function CrtOpt(optData, group)
-					local optTxt, optIcon, optVal, dispName, uname
-					
-					if type(optData) == "table" then
-						optTxt = optData.text or optData.name or tostring(optData.value)
-						optIcon = optData.icon
-						optVal = optData.value or optTxt
-					else
-						optTxt = tostring(optData)
-						optVal = optData
-					end
-				
-					if Dropdown.isPDrop then
-						local name, dispExt = optTxt:match("^(.-)%s%((.-)%)$")
-						uname = name or optTxt
-						dispName = dispExt or optTxt
-					end
-				
-					local optH = Dropdown.isPDrop and 60 or 28
-					local OptBtn
-				
-					if Dropdown.isPDrop then
-						OptBtn = AddThemeObject(SetProps(SetChildren(MakeElement("Button", Color3.fromRGB(40, 40, 40)), {
-							MakeElement("Corner", 0, 6),
-							AddThemeObject(SetProps(MakeElement("Label", dispName, 13, 0), {
-								Name = "DisplayName",
-								Position = UDim2.new(0, 60, 0, 8),
-								Size = UDim2.new(1, -70, 0, 16),
-								Font = Enum.Font.GothamBold,
-								TextXAlignment = Enum.TextXAlignment.Left,
-								TextColor3 = Color3.fromRGB(255, 255, 255),
-								BackgroundTransparency = 1
-							}), "Text"),
-							AddThemeObject(SetProps(MakeElement("Label", uname, 12, 0.3), {
-								Name = "Username",
-								Position = UDim2.new(0, 60, 0, 26),
-								Size = UDim2.new(1, -70, 0, 14),
-								Font = Enum.Font.Gotham,
-								TextXAlignment = Enum.TextXAlignment.Left,
-								TextColor3 = Color3.fromRGB(200, 200, 200),
-								BackgroundTransparency = 1
-							}), "Text"),
-							AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 10), {
-								Size = UDim2.new(0, 50, 0, 50),
-								Position = UDim2.new(0, 5, 0, 5)
-							}), {
-								SetProps(MakeElement("Image", "https://www.roblox.com/headshot-thumbnail/image?userId=" .. (vgs.ps:FindFirstChild(uname) and vgs.ps[uname].UserId or 1) .. "&width=420&height=420&format=png"), {
-									Size = UDim2.new(1, 0, 1, 0),
-									BackgroundTransparency = 1
-								}),
-								MakeElement("Corner", 1)
-							}), "Divider")
-						}), {
-							Parent = group or DdCont,
-							Size = UDim2.new(1, 0, 0, optH),
-							BackgroundTransparency = 1,
-							ClipsDescendants = true
-						}), "Divider")
-				
-						local ucorn = Instance.new("UICorner", OptBtn:FindFirstChild("Frame"):FindFirstChild("ImageLabel"))
-						ucorn.CornerRadius = UDim.new(0, 10)
-					else
-						OptBtn = AddThemeObject(SetProps(SetChildren(MakeElement("Button", Color3.fromRGB(40, 40, 40)), {
-							MakeElement("Corner", 0, 6),
-							optIcon and SetProps(MakeElement("Image", optIcon), {
-								Size = UDim2.new(0, 16, 0, 16),
-								Position = UDim2.new(0, 8, 0.5, 0),
-								AnchorPoint = Vector2.new(0, 0.5),
-								Name = "Icon"
-							}) or MakeElement("TFrame"),
-							AddThemeObject(SetProps(MakeElement("Label", optTxt, 13, 0.4), {
-								Position = UDim2.new(0, optIcon and 32 or 8, 0, 0),
-								Size = UDim2.new(1, optIcon and -40 or -16, 1, 0),
-								Name = "Title",
-								TextXAlignment = Enum.TextXAlignment.Left
-							}), "Text"),
-							DropdownConfig.Multi and SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(60, 60, 60), 0, 2), {
-								Size = UDim2.new(0, 16, 0, 16),
-								Position = UDim2.new(1, -24, 0.5, 0),
-								AnchorPoint = Vector2.new(0, 0.5),
-								Name = "Checkbox"
-							}), {
-								SetProps(MakeElement("Stroke"), {
-									Color = Color3.fromRGB(60, 60, 60),
-									Thickness = 1,
-									Name = "Stroke"
-								}),
-								SetProps(MakeElement("Image", "rbxassetid://3944680095"), {
-									Size = UDim2.new(0, 15, 0, 15),
-									AnchorPoint = Vector2.new(0.5, 0.5),
-									Position = UDim2.new(0.5, 0, 0.5, 0),
-									ImageColor3 = Color3.fromRGB(255, 255, 255),
-									Name = "Ico"
-								})
-							}) or MakeElement("TFrame")
-						}), {
-							Parent = group or DdCont,
-							Size = UDim2.new(1, 0, 0, optH),
-							BackgroundTransparency = 1,
-							ClipsDescendants = true
-						}), "Divider")
-					end
-					
-					AddConnection(OptBtn.MouseButton1Click, function()
-						if DropdownConfig.Multi then
-							local index = table.find(Dropdown.Value, optVal)
-							if index then
-								table.remove(Dropdown.Value, index)
-							else
-								table.insert(Dropdown.Value, optVal)
-							end
-							Dropdown:UpdSel()
-						else
-							Dropdown:Set(optVal)
-							Dropdown.Toggled = false
-							Dropdown.srchMode = false
-							
-							if DropdownConfig.Searchable and SrchBox then
-								SrchBox.Text = ""
-								Dropdown.srchTxt = ""
-								relfcs()
-							end
-							
-							Dropdown:UpdVis()
-						end
-						pcall(function()
-							SaveCfg(game.GameId)
-						end)
-					end)
-				
-					AddConnection(OptBtn.MouseEnter, function()
-						vgs.TS:Create(OptBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.8}):Play()
-					end)
-				
-					AddConnection(OptBtn.MouseLeave, function()
-						local sel = DropdownConfig.Multi and table.find(Dropdown.Value, optVal) or (Dropdown.Value == optVal)
-						vgs.TS:Create(OptBtn, TweenInfo.new(0.15), {BackgroundTransparency = sel and 0.2 or 1}):Play()
-					end)
-				
-					Dropdown.Buttons[optVal] = OptBtn
-					return OptBtn
-				end
-				
-				local function CrtGrp(gName, opts)
-					local GrpFrame = SetChildren(SetProps(MakeElement("TFrame"), {
-						Size = UDim2.new(1, 0, 0, 0),
-						Parent = DdCont,
-						Name = " " .. gName,
-						AutomaticSize = Enum.AutomaticSize.Y
-					}), {
-						MakeElement("List", 0, 2),
-						AddThemeObject(SetProps(MakeElement("Label", " " .. gName, 12), {
-							Size = UDim2.new(1, -16, 0, 20),
-							Position = UDim2.new(0, 8, 0, 0),
-							Font = Enum.Font.GothamBold,
-							Name = "GroupHeader",
-							TextXAlignment = Enum.TextXAlignment.Left
-						}), "TextDark")
-					})
-			
-					Dropdown.Groups[gName] = GrpFrame
-			
-					for _, option in pairs(opts) do
-						CrtOpt(option, GrpFrame)
-					end
-			
-					return GrpFrame
-				end
-			
-				local function FiltrOpts()
-					if not DropdownConfig.Searchable or Dropdown.srchTxt == "" then
-						for _, btn in pairs(Dropdown.Buttons) do
-							btn.Visible = true
-						end
-						for _, group in pairs(Dropdown.Groups) do
-							group.Visible = true
-						end
-						return
-					end
-					
-					local srchLow = string.lower(Dropdown.srchTxt)
-					for value, btn in pairs(Dropdown.Buttons) do
-						local srchTxt = ""
-						if Dropdown.isPDrop then
-							if btn:FindFirstChild("DisplayName") then
-								srchTxt = srchTxt .. string.lower(btn.DisplayName.Text) .. " "
-							end
-							if btn:FindFirstChild("Username") then
-								srchTxt = srchTxt .. string.lower(btn.Username.Text)
-							end
-						else
-							if btn:FindFirstChild("Title") then
-								srchTxt = string.lower(btn.Title.Text)
-							end
-						end
-						btn.Visible = string.find(srchTxt, srchLow) ~= nil
-					end
-					
-					for _, group in pairs(Dropdown.Groups) do
-						local hasVis = false
-						for _, child in pairs(group:GetChildren()) do
-							if child:IsA("TextButton") and child.Visible then
-								hasVis = true
-								break
-							end
-						end
-						group.Visible = hasVis
-					end
-				end
-				
-				local function StaggerAnim()
-					local visibleBtns = {}
-					for _, btn in pairs(Dropdown.Buttons) do
-						if btn.Visible then
-							table.insert(visibleBtns, btn)
-						end
-					end
-					
-					for i, btn in ipairs(visibleBtns) do
-						local delay = (i - 1) * 0.02
-						spawn(function()
-							wait(delay)
-							vgs.TS:Create(btn, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-								Position = UDim2.new(0, 0, 0, 0),
-								BackgroundTransparency = btn.BackgroundTransparency
-							}):Play()
-						end)
-					end
-				end
-				
-				function Dropdown:UpdSel(mode)
-					local selTxt = ""
-					if self.Multi then  
-						if type(self.Value) == "table" and #self.Value > 0 then
-							local vVals = {}
-							for _, v in pairs(self.Value) do
-								if type(v) == "string" or type(v) == "number" then
-									table.insert(vVals, tostring(v))
-								end
-							end
-							selTxt = #vVals > 0 and table.concat(vVals, ", ") or "Select options"
-						else
-							selTxt = "Select options"
-						end
-					else
-						selTxt = tostring(self.Value ~= "" and self.Value or "Select option")
-					end
-					DdFrame.Header.Selected.Text = selTxt
-				
-					for value, btn in pairs(self.Buttons) do
-						local sel = self.Multi and table.find(self.Value, value) or (self.Value == value)
-						local twInf = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-				
-						vgs.TS:Create(btn, twInf, {BackgroundTransparency = sel and 0.2 or 1}):Play()
-				
-						if self.isPDrop then
-							if btn:FindFirstChild("DisplayName") then
-								vgs.TS:Create(btn.DisplayName, twInf, {TextTransparency = sel and 0 or 0.4}):Play()
-							end
-							if btn:FindFirstChild("Username") then
-								vgs.TS:Create(btn.Username, twInf, {TextTransparency = sel and 0 or 0.4}):Play()
-							end
-						else
-							if btn:FindFirstChild("Title") then
-								vgs.TS:Create(btn.Title, twInf, {TextTransparency = sel and 0 or 0.4}):Play()
-							end
-						end
-				
-						if self.Multi and btn:FindFirstChild("Checkbox") then
-							vgs.TS:Create(btn.Checkbox, twInf, {
-								BackgroundColor3 = sel and OrionLib.Themes[OrionLib.SelectedTheme].Accent or OrionLib.Themes[OrionLib.SelectedTheme].Divider
-							}):Play()
-							
-							if btn.Checkbox:FindFirstChild("Stroke") then
-								vgs.TS:Create(btn.Checkbox.Stroke, twInf, {
-									Color = sel and OrionLib.Themes[OrionLib.SelectedTheme].Accent or OrionLib.Themes[OrionLib.SelectedTheme].Stroke
-								}):Play()
-							end
-							
-							if btn.Checkbox:FindFirstChild("Ico") then
-								vgs.TS:Create(btn.Checkbox.Ico, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-									ImageTransparency = sel and 0 or 1, 
-									Size = sel and UDim2.new(0, 15, 0, 15) or UDim2.new(0, 8, 0, 8)
-								}):Play()
-							end
-						end
-					end
-					
-					if self.Multi and DropdownConfig.Call and mode ~= 1 then 
-						pcall(function()
-							DropdownConfig.Callback(self.Value)
-						end)
-					end
-				end
-			
-				function Dropdown:UpdVis()
-					local srchTglH = DropdownConfig.Searchable and self.Toggled and 34 or 0
-					local srchBoxH = DropdownConfig.Searchable and self.srchMode and 34 or 0
-					local totSrchH = srchTglH + srchBoxH
-					
-					DdCont.Visible = self.Toggled
-					DdFrame.Header.Line.Visible = self.Toggled
-					
-					if DropdownConfig.Searchable and SrchTgl then
-						SrchTgl.Visible = self.Toggled
-					end
-					
-					if DropdownConfig.Searchable and SrchCont then
-						SrchCont.Visible = self.srchMode
-					end
-					
-					if not self.Toggled or not self.srchMode then
-						relfcs()
-					end
-					
-					local newPos = UDim2.new(0, 0, 0, 38 + totSrchH)
-					local newSz = UDim2.new(1, 0, 1, -(38 + totSrchH))
-					
-					vgs.TS:Create(DdCont, TweenInfo.new(0.15), {
-						Position = newPos,
-						Size = newSz
-					}):Play()
-					
-					vgs.TS:Create(DdFrame.Header.Arrow, TweenInfo.new(0.15), {Rotation = self.Toggled and 0 or 180}):Play()
-			
-					local cntH = 0
-					if self.Toggled then
-						local totBtns = 0
-						for _, btn in pairs(self.Buttons) do
-							if btn.Visible then
-								totBtns = totBtns + 1
-							end
-						end
-						local btnH = self.isPDrop and 60 or 28
-						cntH = math.min(totBtns, MaxElems) * btnH + totSrchH
-					end
-			
-					local totH = self.Toggled and (38 + cntH) or 38
-					vgs.TS:Create(DdFrame, TweenInfo.new(0.15), {Size = UDim2.new(1, 0, 0, totH)}):Play()
-			
-					if self.Toggled then
-						for _, btn in pairs(self.Buttons) do
-							if btn.Visible then
-								btn.Position = UDim2.new(0, -10, 0, 0)
-							end
-						end
-						task.wait(0.05)
-						StaggerAnim()
-					end
-			
-					if DropdownConfig.Searchable and SrchBox then
-						if self.Toggled and self.srchMode then
-							spawn(function()
-								wait(0.1)
-								SrchBox:CaptureFocus()
-							end)
-						else
-							relfcs()
-							if not self.srchMode then
-								SrchBox.Text = ""
-								self.srchTxt = ""
-								FiltrOpts()
-							end
-						end
-					end
-				end
-				
-				function Dropdown:Get()
-					return self.Value
-				end
-				
-				function Dropdown:Has(Value)
-					if DropdownConfig.Multi then
-						return table.find(self.Value, Value) ~= nil
-					else
-						return self.Value == Value
-					end
-				end
-				
-				function Dropdown:Set(Value, AddMode)
-					if DropdownConfig.Multi then
-						local changed = false
-						
-						if AddMode ~= nil then
-							local values = type(Value) == "table" and Value or {Value}
-							for _, v in pairs(values) do
-								if not table.find(self.Options, v) then continue end
-								
-								local index = table.find(self.Value, v)
-								if AddMode and not index then
-									table.insert(self.Value, v)
-									changed = true
-								elseif not AddMode and index then
-									table.remove(self.Value, index)
-									changed = true
-								end
-							end
-						else
-							local newValues = type(Value) == "table" and Value or {Value}
-							local validValues = {}
-							
-							for _, v in pairs(newValues) do
-								if table.find(self.Options, v) then
-									table.insert(validValues, v)
-								end
-							end
-							
-							if #validValues ~= #self.Value then
-								changed = true
-							else
-								for _, v in pairs(validValues) do
-									if not table.find(self.Value, v) then
-										changed = true
-										break
-									end
-								end
-							end
-							
-							self.Value = validValues
-						end
-						
-						if changed then
-							self:UpdSel(1)
-							if DropdownConfig.Call then
-								pcall(function()
-									DropdownConfig.Callback(self.Value)
-								end)
-							end
-						end
-					else
-						if not table.find(self.Options, Value) then
-							self.Value = "..."
-							DdFrame.Header.Selected.Text = self.Value
-							
-							for _, v in pairs(self.Buttons) do
-								vgs.TS:Create(v, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
-								
-								if self.isPDrop then
-									if v:FindFirstChild("DisplayName") then
-										vgs.TS:Create(v.DisplayName, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
-									end
-									if v:FindFirstChild("Username") then
-										vgs.TS:Create(v.Username, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
-									end
-								else
-									if v:FindFirstChild("Title") then
-										vgs.TS:Create(v.Title, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
-									end
-								end
-							end
-							return
-						end
-				
-						self.Value = Value
-						DdFrame.Header.Selected.Text = self.Value
-				
-						for _, v in pairs(self.Buttons) do
-							vgs.TS:Create(v, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
-							
-							if self.isPDrop then
-								if v:FindFirstChild("DisplayName") then
-									vgs.TS:Create(v.DisplayName, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
-								end
-								if v:FindFirstChild("Username") then
-									vgs.TS:Create(v.Username, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
-								end
-							else
-								if v:FindFirstChild("Title") then
-									vgs.TS:Create(v.Title, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
-								end
-							end
-						end
-						
-						if self.Buttons[Value] then
-							vgs.TS:Create(self.Buttons[Value], TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.2}):Play()
-							
-							if self.isPDrop then
-								if self.Buttons[Value]:FindFirstChild("DisplayName") then
-									vgs.TS:Create(self.Buttons[Value].DisplayName, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
-								end
-								if self.Buttons[Value]:FindFirstChild("Username") then
-									vgs.TS:Create(self.Buttons[Value].Username, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
-								end
-							else
-								if self.Buttons[Value]:FindFirstChild("Title") then
-									vgs.TS:Create(self.Buttons[Value].Title, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
-								end
-							end
-						end
-						
-						pcall(function()
-							DropdownConfig.Callback(self.Value)
-						end)
-					end
-				end
-				
-				function Dropdown:Refresh(Options, Delete)
-					if Delete then
-						for _, v in pairs(self.Buttons) do
-							v:Destroy()
-						end
-						for _, v in pairs(self.Groups) do
-							v:Destroy()
-						end
-						table.clear(self.Options)
-						table.clear(self.Buttons)
-						table.clear(self.Groups)
-					end
-					self.Options = Options
-					DropdownConfig.Options = Options
-					self.isPDrop = DtctPDrop()
-				
-					if DropdownConfig.Grouped then
-						for gName, grpOpts in pairs(Options) do
-							CrtGrp(gName, grpOpts)
-						end
-					else
-						for _, option in pairs(Options) do
-							CrtOpt(option)
-						end
-					end
-					
-					if self.isPDrop then
-						local preload = {}
-						for _, option in pairs(Options) do
-							local optTxt = type(option) == "table" and (option.text or option.name) or tostring(option)
-							local uname = optTxt:match("^(.-) %(") or optTxt
-							if vgs and vgs.ps and vgs.ps:FindFirstChild(uname) then
-								local userId = vgs.ps[uname].UserId
-								local imurl = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. userId .. "&width=420&height=420&format=png"
-								table.insert(preload, imurl)
-							end
-						end
-						if #preload > 0 then
-							task.spawn(function()
-								game:GetService("ContentProvider"):PreloadAsync(preload)
-							end)
-						end
-					end
-					
-					if DropdownConfig.Searchable and self.srchTxt ~= "" then
-						FiltrOpts()
-					end
-					
-					if self.Toggled then
-						self:UpdVis()
-					end
-					self:UpdSel()
-				end
-			
-				AddConnection(Click.MouseButton1Click, function()
-					Dropdown.Toggled = not Dropdown.Toggled
-					if not Dropdown.Toggled then
-						Dropdown.srchMode = false
-					end
-					Dropdown:UpdVis()
-				end)
-			
-				if DropdownConfig.Searchable and SrchTgl then
-					AddConnection(SrchTgl.MouseButton1Click, function()
-						Dropdown.srchMode = not Dropdown.srchMode
-						vgs.TS:Create(SrchTgl.SearchArrow, TweenInfo.new(0.15), {
-							Rotation = Dropdown.srchMode and 0 or 180
-						}):Play()
-						Dropdown:UpdVis()
-					end)
-			
-					AddConnection(SrchTgl.MouseEnter, function()
-						vgs.TS:Create(SrchTgl.SearchArrow, TweenInfo.new(0.15), {
-							ImageColor3 = Color3.fromRGB(255, 255, 255)
-						}):Play()
-					end)
-			
-					AddConnection(SrchTgl.MouseLeave, function()
-						vgs.TS:Create(SrchTgl.SearchArrow, TweenInfo.new(0.15), {
-							ImageColor3 = Color3.fromRGB(160, 160, 160)
-						}):Play()
-					end)
-				end
-			
-				if DropdownConfig.Searchable and SrchBox then
-					AddConnection(SrchBox:GetPropertyChangedSignal("Text"), function()
-						Dropdown.srchTxt = SrchBox.Text
-						FiltrOpts()
-						Dropdown:UpdVis()
-					end)
-			
-					AddConnection(SrchBox.Focused, function()
-						SrchBox.TextXAlignment = Enum.TextXAlignment.Left
-					end)
-					
-					AddConnection(SrchBox.FocusLost, function()
-						if SrchBox.Text == "" then
-							SrchBox.TextXAlignment = Enum.TextXAlignment.Left
-						end
-					end)
-				end
-			
-				AddConnection(vgs.UIS.InputBegan, function(input, gameProcessed)
-					if gameProcessed or not Dropdown.Toggled then
-						return
-					end
-					if input.KeyCode == Enum.KeyCode.Escape then
-						Dropdown.Toggled = false
-						Dropdown.srchMode = false
-						relfcs()
-						Dropdown:UpdVis()
-					end
-				end)
-			
-				Dropdown:Refresh(Dropdown.Options, false)
-				
-				if DropdownConfig.Multi then
-					Dropdown:UpdSel(1)
-				else
-					Dropdown:Set(Dropdown.Value)
-				end
-				
-				if DropdownConfig.Flag then
-					OrionLib.Flags[DropdownConfig.Flag] = Dropdown
-				end
-			
-				table.insert(OrionLib.Dropdowns, Dropdown)
-				
-				if vgs and vgs.ps then
-					AddConnection(vgs.ps.PlayerAdded, function(plr)
-						Dropdown.isPDrop = DtctPDrop()
-						
-						if DropdownConfig.Searchable and Dropdown.srchTxt ~= "" then
-							FiltrOpts()
-						end
-					end)
-					
-					vgs.ps.PlayerRemoving:Connect(function(plr)
-						if not Dropdown.isPDrop then return end
-						
-						local pName = plr.Name
-						
-						for i = #Dropdown.Options, 1, -1 do
-							local optTxt = type(Dropdown.Options[i]) == "table" and (Dropdown.Options[i].text or Dropdown.Options[i].name) or tostring(Dropdown.Options[i])
-							local name = optTxt:match("^(.-) %(") or optTxt
-							
-							if name == pName then
-								local optVal = type(Dropdown.Options[i]) == "table" and (Dropdown.Options[i].value or optTxt) or Dropdown.Options[i]
-								
-								if Dropdown.Buttons[optVal] then
-									Dropdown.Buttons[optVal]:Destroy()
-									Dropdown.Buttons[optVal] = nil
-								end
-								
-								table.remove(Dropdown.Options, i)
-							end
-						end
-						
-						if DropdownConfig.Multi then
-							for i = #Dropdown.Value, 1, -1 do
-								local optTxt = Dropdown.Value[i]
-								local name = optTxt:match("^(.-) %(") or optTxt
-								
-								if name == pName then
-									table.remove(Dropdown.Value, i)
-								end
-							end
-							DropdownConfig.Callback(Dropdown.Value)
-						else
-							local currName = Dropdown.Value:match("^(.-) %(") or Dropdown.Value
-							if currName == pName then
-								if DropdownConfig.PlrLeftNote then
-									OrionLib:MakeNotification({
-										Name = "Selected Player left.",
-										Content = plr.DisplayName .. " left the Game.",
-										Image = "rbxassetid://7733911828",
-										Time = 5
-									})
-								end
-								Dropdown:Set("...")
-							end
-						end
-			
-						Dropdown:UpdSel()
-			
-						if DropdownConfig.Searchable and Dropdown.srchTxt ~= "" then
-							FiltrOpts()
-						end
-						
-						if Dropdown.Toggled then
-							Dropdown:UpdVis()
-						end
-					end)
-				end
-					
-				return Dropdown
-			end
-			
+function ElementFunction:AddPlayersDropdown(DropdownConfig)
+    DropdownConfig = DropdownConfig or {}
+    DropdownConfig.Name = DropdownConfig.Name or "Dropdown"
+    DropdownConfig.Multi = DropdownConfig.Multi or false
+    DropdownConfig.Default = DropdownConfig.Default or (DropdownConfig.Multi and {} or "")
+    DropdownConfig.Searchable = DropdownConfig.Searchable or false
+    DropdownConfig.PlrLeftNote = DropdownConfig.PlrLeftNote or false
+    DropdownConfig.Callback = DropdownConfig.Callback or function() end
+    DropdownConfig.Flag = DropdownConfig.Flag or nil
+    DropdownConfig.Save = DropdownConfig.Save or false
+
+    local TextService = game:GetService("TextService")
+    local MaxElems = 4
+    local OptH = 45
+
+    local Dropdown = {
+        Value = DropdownConfig.Multi and {} or DropdownConfig.Default,
+        Buttons = {},
+        Toggled = false,
+        srchTxt = "",
+        srchMode = false,
+        Type = "Dropdown",
+        Save = DropdownConfig.Save,
+        Multi = DropdownConfig.Multi
+    }
+
+    local DdList = MakeElement("List")
+    local SrchBox, SrchCont, SrchTgl
+
+    local function relfcs()
+        if DropdownConfig.Searchable and SrchBox and SrchBox:IsFocused() then
+            SrchBox:ReleaseFocus()
+        end
+    end
+
+    if DropdownConfig.Searchable then
+        SrchTgl = AddThemeObject(SetChildren(SetProps(MakeElement("Button", Color3.fromRGB(255,255,255)), {
+            Size = UDim2.new(1, -16, 0, 26),
+            Position = UDim2.new(0, 8, 0, 43),
+            Visible = false,
+            Name = "SearchToggle",
+            BackgroundTransparency = 1
+        }), {
+            AddThemeObject(SetProps(MakeElement("Frame"), {
+                Size = UDim2.new(1, -30, 0, 1),
+                Position = UDim2.new(0, 0, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Name = "SearchLine"
+            }), "Stroke"),
+            AddThemeObject(SetProps(MakeElement("Image", "rbxassetid://7072706796"), {
+                Size = UDim2.new(0, 16, 0, 16),
+                Position = UDim2.new(1, -20, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                ImageColor3 = Color3.fromRGB(160, 160, 160),
+                Rotation = 180,
+                Name = "SearchArrow"
+            }), "TextDark")
+        }), "Main")
+
+        SrchBox = SetProps(MakeElement("TextBox"), {
+            Size = UDim2.new(1, -16, 1, -6),
+            Position = UDim2.new(0, 8, 0, 3),
+            BackgroundTransparency = 1,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            PlaceholderColor3 = Color3.fromRGB(140, 140, 140),
+            PlaceholderText = "Buscar...",
+            Font = Enum.Font.Gotham,
+            TextSize = 13,
+            Text = "",
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+
+        SrchCont = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255,255,255),0,6), {
+            Size = UDim2.new(1, -16, 0, 26),
+            Position = UDim2.new(0, 8, 0, 74),
+            Visible = false,
+            Name = "SearchContainer"
+        }), {AddThemeObject(MakeElement("Stroke"), "Stroke"), SrchBox}), "Main")
+    end
+
+    local DdCont = AddThemeObject(SetProps(SetChildren(MakeElement("ScrollFrame", Color3.fromRGB(40, 40, 40), 4), {
+        DdList
+    }), {
+        Parent = ItemParent,
+        Position = UDim2.new(0, 0, 0, 38),
+        Size = UDim2.new(1, 0, 1, -38),
+        ClipsDescendants = true,
+        Visible = false,
+        ScrollBarImageTransparency = 1
+    }), "Divider")
+
+    local Click = SetProps(MakeElement("Button"), {
+        Size = UDim2.new(1, 0, 1, 0)
+    })
+
+    local DdFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 5), {
+        Size = UDim2.new(1, 0, 0, 38),
+        Parent = ItemParent,
+        ClipsDescendants = true
+    }), {
+        DropdownConfig.Searchable and SrchTgl or MakeElement("TFrame"),
+        DropdownConfig.Searchable and SrchCont or MakeElement("TFrame"),
+        DdCont,
+        SetProps(SetChildren(MakeElement("TFrame"), {
+            AddThemeObject(SetProps(MakeElement("Label", DropdownConfig.Name, 15), {
+                Size = UDim2.new(1, -12, 1, 0),
+                Position = UDim2.new(0, 12, 0, 0),
+                Font = Enum.Font.GothamBold,
+                Name = "Content"
+            }), "Text"),
+            AddThemeObject(SetProps(MakeElement("Image", "rbxassetid://7072706796"), {
+                Size = UDim2.new(0, 20, 0, 20),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Position = UDim2.new(1, -30, 0.5, 0),
+                ImageColor3 = Color3.fromRGB(240, 240, 240),
+                Name = "Arrow"
+            }), "TextDark"),
+            AddThemeObject(SetProps(MakeElement("Label", "Selecionar", 13), {
+                Size = UDim2.new(1, -160, 1, 0),
+                Position = UDim2.new(0, 120, 0, 0),
+                Font = Enum.Font.Gotham,
+                Name = "Selected",
+                TextXAlignment = Enum.TextXAlignment.Right,
+                TextTruncate = Enum.TextTruncate.AtEnd
+            }), "TextDark"),
+            AddThemeObject(SetProps(MakeElement("Frame"), {
+                Size = UDim2.new(1, 0, 0, 1),
+                Position = UDim2.new(0, 0, 1, -1),
+                Name = "Line",
+                Visible = false
+            }), "Stroke"),
+            Click
+        }), {
+            Size = UDim2.new(1, 0, 0, 38),
+            ClipsDescendants = true,
+            Name = "Header"
+        }),
+        AddThemeObject(MakeElement("Stroke"), "Stroke"),
+        MakeElement("Corner")
+    }), "Second")
+
+    Relem(_tabName, DropdownConfig.Name, DdFrame)
+
+    AddConnection(DdList:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+        DdCont.CanvasSize = UDim2.new(0, 0, 0, DdList.AbsoluteContentSize.Y)
+    end)
+
+    local vconn = AddConnection(MainWindow:GetPropertyChangedSignal("Visible"), function()
+        if not MainWindow.Visible then
+            relfcs()
+            if Dropdown.Toggled then
+                Dropdown.Toggled = false
+                Dropdown.srchMode = false
+                Dropdown:UpdVis()
+            end
+        end
+    end)
+
+    AddConnection(DdFrame.Destroying, function()
+        if vconn and vconn.Connected then
+            vconn:Disconnect()
+        end
+    end)
+
+    local function TruncateText(label, text, maxWidth)
+        local finalText = text
+        local textSize = TextService:GetTextSize(finalText, label.TextSize, label.Font, Vector2.new(math.huge, math.huge))
+        if textSize.X <= maxWidth then
+            return text
+        end
+        while textSize.X > maxWidth and #finalText > 0 do
+            finalText = string.sub(finalText, 1, #finalText - 1)
+            textSize = TextService:GetTextSize(finalText .. "...", label.TextSize, label.Font, Vector2.new(math.huge, math.huge))
+        end
+        return finalText .. "..."
+    end
+
+    local function CrtOpt(Player)
+        local Option = Player.Name
+        if Dropdown.Buttons[Option] then return Dropdown.Buttons[Option] end
+
+        local DisplayNm = Player.DisplayName
+        local UId = Player.UserId
+
+        local OptBtn = AddThemeObject(SetProps(SetChildren(MakeElement("Button", Color3.fromRGB(40, 40, 40)), {
+            MakeElement("Corner", 0, 6),
+            SetProps(MakeElement("Image", "https://www.roblox.com/headshot-thumbnail/image?userId=" .. UId .. "&width=420&height=420&format=png"), {
+                Size = UDim2.new(0, 40, 0, 40),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Position = UDim2.new(0.05, 0, 0.5, 0),
+                ImageColor3 = Color3.fromRGB(240, 240, 240),
+                Name = "Icon"
+            }),
+            AddThemeObject(SetProps(MakeElement("Label", "@" .. Option, 13, 0.4), {
+                Position = UDim2.new(0.135, 0, 0, 7),
+                Size = UDim2.new(1, -10, 1, 0),
+                Name = "Title"
+            }), "Text"),
+            AddThemeObject(SetProps(MakeElement("Label", DisplayNm, 17, 0.4), {
+                Position = UDim2.new(0.135, 0, 0, -5),
+                Size = UDim2.new(1, -8, 1, 0),
+                Name = "Subtitle"
+            }), "Text"),
+            DropdownConfig.Multi and SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(60, 60, 60), 0, 2), {
+                Size = UDim2.new(0, 16, 0, 16),
+                Position = UDim2.new(1, -24, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Name = "Checkbox"
+            }), {
+                SetProps(MakeElement("Stroke"), {
+                    Color = Color3.fromRGB(60, 60, 60),
+                    Thickness = 1,
+                    Name = "Stroke"
+                }),
+                SetProps(MakeElement("Image", "rbxassetid://3944680095"), {
+                    Size = UDim2.new(0, 15, 0, 15),
+                    AnchorPoint = Vector2.new(0.5, 0.5),
+                    Position = UDim2.new(0.5, 0, 0.5, 0),
+                    ImageColor3 = Color3.fromRGB(255, 255, 255),
+                    Name = "Ico"
+                })
+            }) or MakeElement("TFrame")
+        }), {
+            Parent = DdCont,
+            Size = UDim2.new(1, 0, 0, OptH),
+            BackgroundTransparency = 1,
+            ClipsDescendants = true
+        }), "Divider")
+
+        AddConnection(OptBtn.MouseButton1Click, function()
+            if Dropdown.Multi then
+                local index = table.find(Dropdown.Value, Option)
+                if index then
+                    table.remove(Dropdown.Value, index)
+                else
+                    table.insert(Dropdown.Value, Option)
+                end
+                Dropdown:UpdSel()
+            else
+                Dropdown:Set(Option)
+                Dropdown.Toggled = false
+                Dropdown.srchMode = false
+
+                if DropdownConfig.Searchable and SrchBox then
+                    SrchBox.Text = ""
+                    Dropdown.srchTxt = ""
+                    relfcs()
+                end
+
+                Dropdown:UpdVis()
+            end
+            pcall(function() SaveCfg(game.GameId) end)
+        end)
+
+        AddConnection(OptBtn.MouseEnter, function()
+            vgs.TS:Create(OptBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.8}):Play()
+        end)
+
+        AddConnection(OptBtn.MouseLeave, function()
+            local sel = Dropdown.Multi and table.find(Dropdown.Value, Option) or (Dropdown.Value == Option)
+            vgs.TS:Create(OptBtn, TweenInfo.new(0.15), {BackgroundTransparency = sel and 0.2 or 1}):Play()
+        end)
+
+        Dropdown.Buttons[Option] = OptBtn
+        return OptBtn
+    end
+
+    local function RemoveOpt(Option)
+        if Dropdown.Buttons[Option] then
+            Dropdown.Buttons[Option]:Destroy()
+            Dropdown.Buttons[Option] = nil
+        end
+    end
+
+    local function FiltrOpts()
+        if not DropdownConfig.Searchable or Dropdown.srchTxt == "" then
+            for _, btn in pairs(Dropdown.Buttons) do
+                btn.Visible = true
+            end
+            return
+        end
+
+        local srchLow = string.lower(Dropdown.srchTxt)
+        for value, btn in pairs(Dropdown.Buttons) do
+            local srchTxt = ""
+            if btn:FindFirstChild("Title") then
+                srchTxt = srchTxt .. string.lower(btn.Title.Text) .. " "
+            end
+            if btn:FindFirstChild("Subtitle") then
+                srchTxt = srchTxt .. string.lower(btn.Subtitle.Text)
+            end
+            btn.Visible = string.find(srchTxt, srchLow, 1, true) ~= nil
+        end
+    end
+
+    function Dropdown:UpdSel()
+        local selTxt = ""
+        if self.Multi then
+            if type(self.Value) == "table" and #self.Value > 0 then
+                selTxt = table.concat(self.Value, ", ")
+            else
+                selTxt = "Selecionar"
+            end
+        else
+            selTxt = (self.Value ~= "" and self.Value) and self.Value or "Selecionar"
+        end
+
+        DdFrame.Header.Selected.Text = TruncateText(DdFrame.Header.Selected, selTxt, math.max(DdFrame.Header.Selected.AbsoluteSize.X, 50))
+
+        for value, btn in pairs(self.Buttons) do
+            local sel = self.Multi and table.find(self.Value, value) or (self.Value == value)
+            local twInf = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+            vgs.TS:Create(btn, twInf, {BackgroundTransparency = sel and 0.2 or 1}):Play()
+
+            if btn:FindFirstChild("Title") then
+                vgs.TS:Create(btn.Title, twInf, {TextTransparency = sel and 0 or 0.4}):Play()
+            end
+            if btn:FindFirstChild("Subtitle") then
+                vgs.TS:Create(btn.Subtitle, twInf, {TextTransparency = sel and 0 or 0.4}):Play()
+            end
+
+            if self.Multi and btn:FindFirstChild("Checkbox") then
+                vgs.TS:Create(btn.Checkbox, twInf, {
+                    BackgroundColor3 = sel and OrionLib.Themes[OrionLib.SelectedTheme].Accent or OrionLib.Themes[OrionLib.SelectedTheme].Divider
+                }):Play()
+
+                if btn.Checkbox:FindFirstChild("Stroke") then
+                    vgs.TS:Create(btn.Checkbox.Stroke, twInf, {
+                        Color = sel and OrionLib.Themes[OrionLib.SelectedTheme].Accent or OrionLib.Themes[OrionLib.SelectedTheme].Stroke
+                    }):Play()
+                end
+
+                if btn.Checkbox:FindFirstChild("Ico") then
+                    vgs.TS:Create(btn.Checkbox.Ico, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                        ImageTransparency = sel and 0 or 1,
+                        Size = sel and UDim2.new(0, 15, 0, 15) or UDim2.new(0, 8, 0, 8)
+                    }):Play()
+                end
+            end
+        end
+
+        if self.Multi then
+            pcall(function() DropdownConfig.Callback(self.Value) end)
+        end
+    end
+
+    function Dropdown:UpdVis()
+        local srchTglH = DropdownConfig.Searchable and self.Toggled and 34 or 0
+        local srchBoxH = DropdownConfig.Searchable and self.srchMode and 34 or 0
+        local totSrchH = srchTglH + srchBoxH
+
+        DdCont.Visible = self.Toggled
+        DdFrame.Header.Line.Visible = self.Toggled
+
+        if DropdownConfig.Searchable and SrchTgl then
+            SrchTgl.Visible = self.Toggled
+        end
+        if DropdownConfig.Searchable and SrchCont then
+            SrchCont.Visible = self.srchMode
+        end
+        if not self.Toggled or not self.srchMode then
+            relfcs()
+        end
+
+        vgs.TS:Create(DdCont, TweenInfo.new(0.15), {
+            Position = UDim2.new(0, 0, 0, 38 + totSrchH),
+            Size = UDim2.new(1, 0, 1, -(38 + totSrchH))
+        }):Play()
+
+        vgs.TS:Create(DdFrame.Header.Arrow, TweenInfo.new(0.15), {Rotation = self.Toggled and 0 or 180}):Play()
+
+        local cntH = 0
+        if self.Toggled then
+            local totBtns = 0
+            for _, btn in pairs(self.Buttons) do
+                if btn.Visible then
+                    totBtns = totBtns + 1
+                end
+            end
+            cntH = math.min(totBtns, MaxElems) * OptH + totSrchH
+        end
+
+        local totH = self.Toggled and (38 + cntH) or 38
+        vgs.TS:Create(DdFrame, TweenInfo.new(0.15), {Size = UDim2.new(1, 0, 0, totH)}):Play()
+
+        if DropdownConfig.Searchable and SrchBox then
+            if self.Toggled and self.srchMode then
+                task.spawn(function()
+                    task.wait(0.1)
+                    SrchBox:CaptureFocus()
+                end)
+            else
+                relfcs()
+                if not self.srchMode then
+                    SrchBox.Text = ""
+                    self.srchTxt = ""
+                    FiltrOpts()
+                end
+            end
+        end
+    end
+
+    function Dropdown:Get()
+        return self.Value
+    end
+
+    function Dropdown:Has(Value)
+        if self.Multi then
+            return table.find(self.Value, Value) ~= nil
+        else
+            return self.Value == Value
+        end
+    end
+
+    function Dropdown:Set(Value)
+        if self.Multi then
+            local values = type(Value) == "table" and Value or {Value}
+            self.Value = {}
+            for _, v in pairs(values) do
+                if self.Buttons[v] then
+                    table.insert(self.Value, v)
+                end
+            end
+            self:UpdSel()
+            pcall(function() DropdownConfig.Callback(self.Value) end)
+        else
+            if not self.Buttons[Value] then
+                self.Value = ""
+                self:UpdSel()
+                return
+            end
+            self.Value = Value
+            self:UpdSel()
+            pcall(function() DropdownConfig.Callback(self.Value) end)
+        end
+    end
+
+    if DropdownConfig.Searchable then
+        AddConnection(SrchTgl.MouseButton1Click, function()
+            Dropdown.srchMode = not Dropdown.srchMode
+            vgs.TS:Create(SrchTgl.SearchArrow, TweenInfo.new(0.15), {Rotation = Dropdown.srchMode and 0 or 180}):Play()
+            Dropdown:UpdVis()
+        end)
+
+        AddConnection(SrchTgl.MouseEnter, function()
+            vgs.TS:Create(SrchTgl.SearchArrow, TweenInfo.new(0.15), {ImageColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+        end)
+
+        AddConnection(SrchTgl.MouseLeave, function()
+            vgs.TS:Create(SrchTgl.SearchArrow, TweenInfo.new(0.15), {ImageColor3 = Color3.fromRGB(160, 160, 160)}):Play()
+        end)
+
+        AddConnection(SrchBox:GetPropertyChangedSignal("Text"), function()
+            Dropdown.srchTxt = SrchBox.Text
+            FiltrOpts()
+            Dropdown:UpdVis()
+        end)
+    end
+
+    AddConnection(Click.MouseButton1Click, function()
+        Dropdown.Toggled = not Dropdown.Toggled
+        if not Dropdown.Toggled then
+            Dropdown.srchMode = false
+        end
+        Dropdown:UpdVis()
+    end)
+
+    AddConnection(vgs.UIS.InputBegan, function(input, gameProcessed)
+        if gameProcessed or not Dropdown.Toggled then return end
+        if input.KeyCode == Enum.KeyCode.Escape then
+            Dropdown.Toggled = false
+            Dropdown.srchMode = false
+            relfcs()
+            Dropdown:UpdVis()
+        end
+    end)
+
+    for _, p in pairs(vgs.ps:GetPlayers()) do
+        CrtOpt(p)
+    end
+
+    if DropdownConfig.Multi then
+        Dropdown:UpdSel()
+    else
+        Dropdown:Set(Dropdown.Value)
+    end
+
+    AddConnection(vgs.ps.PlayerAdded, function(p)
+        CrtOpt(p)
+        if DropdownConfig.Searchable and Dropdown.srchTxt ~= "" then
+            FiltrOpts()
+        end
+        if Dropdown.Toggled then
+            Dropdown:UpdVis()
+        end
+    end)
+
+    AddConnection(vgs.ps.PlayerRemoving, function(p)
+        local pName = p.Name
+
+        if Dropdown.Multi then
+            local index = table.find(Dropdown.Value, pName)
+            if index then
+                table.remove(Dropdown.Value, index)
+                pcall(function() DropdownConfig.Callback(Dropdown.Value) end)
+            end
+        else
+            if Dropdown.Value == pName then
+                if DropdownConfig.PlrLeftNote then
+                    OrionLib:MakeNotification({
+                        Name = "Jogador selecionado saiu",
+                        Content = p.DisplayName .. " saiu do jogo.",
+                        Image = "rbxassetid://7733911828",
+                        Time = 5
+                    })
+                end
+                Dropdown.Value = ""
+            end
+        end
+
+        RemoveOpt(pName)
+        Dropdown:UpdSel()
+
+        if DropdownConfig.Searchable and Dropdown.srchTxt ~= "" then
+            FiltrOpts()
+        end
+
+        if Dropdown.Toggled then
+            Dropdown:UpdVis()
+        end
+    end)
+
+    if DropdownConfig.Flag then
+        OrionLib.Flags[DropdownConfig.Flag] = Dropdown
+    end
+
+    return Dropdown
+end
+function ElementFunction:AddDropdown(DropdownConfig)
+    DropdownConfig = DropdownConfig or {}
+    DropdownConfig.Name = DropdownConfig.Name or "Dropdown"
+    DropdownConfig.Options = DropdownConfig.Options or {}
+    DropdownConfig.Default = DropdownConfig.Default or ""
+    DropdownConfig.Multi = DropdownConfig.Multi or false
+    DropdownConfig.Call = DropdownConfig.Call or false
+    DropdownConfig.Searchable = DropdownConfig.Searchable or false
+    DropdownConfig.Grouped = DropdownConfig.Grouped or false
+    DropdownConfig.Icons = DropdownConfig.Icons or false
+    DropdownConfig.MaxHeight = DropdownConfig.MaxHeight or 200
+    DropdownConfig.PlrLeftNote = DropdownConfig.PlrLeftNote or false
+    DropdownConfig.Callback = DropdownConfig.Callback or function() end
+    DropdownConfig.Flag = DropdownConfig.Flag or nil
+    DropdownConfig.Save = DropdownConfig.Save or false
+
+    -- NOVO: helper para extrair o valor real de uma opção (string ou tabela)
+    local function ExtractVal(optData)
+        if type(optData) == "table" then
+            local optTxt = optData.text or optData.name or tostring(optData.value)
+            return optData.value or optTxt
+        else
+            return optData
+        end
+    end
+
+    local Dropdown = {
+        Value = DropdownConfig.Multi and {} or DropdownConfig.Default,
+        Options = DropdownConfig.Options,
+        filOptns = {},
+        Buttons = {},
+        Groups = {},
+        Toggled = false,
+        srchTxt = "",
+        srchMode = false,
+        Type = "Dropdown",
+        Save = DropdownConfig.Save,
+        isPDrop = false,
+        Multi = DropdownConfig.Multi
+    }
+
+    local function OptionExists(v)
+        for _, opt in pairs(Dropdown.Options) do
+            if ExtractVal(opt) == v then
+                return true
+            end
+        end
+        return false
+    end
+
+    local function DtctPDrop()
+        for _, option in pairs(DropdownConfig.Options) do
+            local optTxt = type(option) == "table" and (option.text or option.name) or tostring(option)
+            local pName = optTxt:match("^(.-) %(") or optTxt
+
+            if vgs and vgs.ps and vgs.ps:FindFirstChild(pName) then
+                return true
+            end
+        end
+        return false
+    end
+
+    Dropdown.isPDrop = DtctPDrop()
+    local MaxElems = 5
+
+    if not OptionExists(Dropdown.Value) and not DropdownConfig.Multi then
+        Dropdown.Value = "..."
+    end
+
+    local DdList = MakeElement("List")
+    local SrchBox, SrchCont, SrchTgl
+
+    local function relfcs()
+        if DropdownConfig.Searchable and SrchBox and SrchBox:IsFocused() then
+            SrchBox:ReleaseFocus()
+        end
+    end
+
+    if DropdownConfig.Searchable then
+        SrchTgl = AddThemeObject(SetChildren(SetProps(MakeElement("Button", Color3.fromRGB(255,255,255)), {
+            Size = UDim2.new(1, -16, 0, 26),
+            Position = UDim2.new(0, 8, 0, 43),
+            Visible = false,
+            Name = "SearchToggle",
+            BackgroundTransparency = 1
+        }), {
+            AddThemeObject(SetProps(MakeElement("Frame"), {
+                Size = UDim2.new(1, -30, 0, 1),
+                Position = UDim2.new(0, 0, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Name = "SearchLine"
+            }), "Stroke"),
+            AddThemeObject(SetProps(MakeElement("Image", "rbxassetid://7072706796"), {
+                Size = UDim2.new(0, 16, 0, 16),
+                Position = UDim2.new(1, -20, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                ImageColor3 = Color3.fromRGB(160, 160, 160),
+                Rotation = 180,
+                Name = "SearchArrow"
+            }), "TextDark")
+        }), "Main")
+
+        SrchBox = SetProps(MakeElement("TextBox"), {
+            Size = UDim2.new(1, -16, 1, -6),
+            Position = UDim2.new(0, 8, 0, 3),
+            BackgroundTransparency = 1,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            PlaceholderColor3 = Color3.fromRGB(140, 140, 140),
+            PlaceholderText = "Search...",
+            Font = Enum.Font.Gotham,
+            TextSize = 13,
+            Text = "",
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+
+        SrchCont = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255,255,255),0,6), {
+            Size = UDim2.new(1, -16, 0, 26),
+            Position = UDim2.new(0, 8, 0, 74),
+            Visible = false,
+            Name = "SearchContainer"
+        }), {AddThemeObject(MakeElement("Stroke"), "Stroke"), SrchBox}), "Main")
+    end
+
+    local DdCont = AddThemeObject(SetProps(SetChildren(MakeElement("ScrollFrame", Color3.fromRGB(40, 40, 40), 4), {
+        DdList
+    }), {
+        Parent = ItemParent,
+        Position = UDim2.new(0, 0, 0, 38),
+        Size = UDim2.new(1, 0, 1, -38),
+        ClipsDescendants = true,
+        Visible = false,
+        ScrollBarImageTransparency = 1
+    }), "Divider")
+
+    local Click = SetProps(MakeElement("Button"), {
+        Size = UDim2.new(1, 0, 1, 0)
+    })
+
+    local DdFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 5), {
+        Size = UDim2.new(1, 0, 0, 38),
+        Parent = ItemParent,
+        ClipsDescendants = true
+    }), {
+        DropdownConfig.Searchable and SrchTgl or MakeElement("TFrame"),
+        DropdownConfig.Searchable and SrchCont or MakeElement("TFrame"),
+        DdCont,
+        SetProps(SetChildren(MakeElement("TFrame"), {
+            AddThemeObject(SetProps(MakeElement("Label", DropdownConfig.Name, 15), {
+                Size = UDim2.new(1, -12, 1, 0),
+                Position = UDim2.new(0, 12, 0, 0),
+                Font = Enum.Font.GothamBold,
+                Name = "Content"
+            }), "Text"),
+            AddThemeObject(SetProps(MakeElement("Image", "rbxassetid://7072706796"), {
+                Size = UDim2.new(0, 20, 0, 20),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Position = UDim2.new(1, -30, 0.5, 0),
+                ImageColor3 = Color3.fromRGB(240, 240, 240),
+                Name = "Arrow"
+            }), "TextDark"),
+            AddThemeObject(SetProps(MakeElement("Label", "Select option", 13), {
+                Size = UDim2.new(1, -160, 1, 0),
+                Position = UDim2.new(0, 120, 0, 0),
+                Font = Enum.Font.Gotham,
+                Name = "Selected",
+                TextXAlignment = Enum.TextXAlignment.Right,
+                TextTruncate = Enum.TextTruncate.AtEnd
+            }), "TextDark"),
+            AddThemeObject(SetProps(MakeElement("Frame"), {
+                Size = UDim2.new(1, 0, 0, 1),
+                Position = UDim2.new(0, 0, 1, -1),
+                Name = "Line",
+                Visible = false
+            }), "Stroke"),
+            Click
+        }), {
+            Size = UDim2.new(1, 0, 0, 38),
+            ClipsDescendants = true,
+            Name = "Header"
+        }),
+        AddThemeObject(MakeElement("Stroke"), "Stroke"),
+        MakeElement("Corner")
+    }), "Second")
+
+    Relem(_tabName, DropdownConfig.Name, DdFrame)
+    AddConnection(DdList:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+        DdCont.CanvasSize = UDim2.new(0, 0, 0, DdList.AbsoluteContentSize.Y)
+    end)
+
+    local vconn = AddConnection(MainWindow:GetPropertyChangedSignal("Visible"), function()
+        if not MainWindow.Visible then
+            relfcs()
+            if Dropdown.Toggled then
+                Dropdown.Toggled = false
+                Dropdown.srchMode = false
+                Dropdown:UpdVis()
+            end
+        end
+    end)
+
+    AddConnection(DdFrame.Destroying, function()
+        if vconn and vconn.Connected then
+            vconn:Disconnect()
+        end
+    end)
+
+    local function CrtOpt(optData, group)
+        local optTxt, optIcon, optVal, dispName, uname
+
+        if type(optData) == "table" then
+            optTxt = optData.text or optData.name or tostring(optData.value)
+            optIcon = optData.icon
+            optVal = optData.value or optTxt
+        else
+            optTxt = tostring(optData)
+            optVal = optData
+        end
+
+        if Dropdown.isPDrop then
+            local name, dispExt = optTxt:match("^(.-)%s%((.-)%)$")
+            uname = name or optTxt
+            dispName = dispExt or optTxt
+        end
+
+        local optH = Dropdown.isPDrop and 60 or 28
+        local OptBtn
+
+        if Dropdown.isPDrop then
+            OptBtn = AddThemeObject(SetProps(SetChildren(MakeElement("Button", Color3.fromRGB(40, 40, 40)), {
+                MakeElement("Corner", 0, 6),
+                AddThemeObject(SetProps(MakeElement("Label", dispName, 13, 0), {
+                    Name = "DisplayName",
+                    Position = UDim2.new(0, 60, 0, 8),
+                    Size = UDim2.new(1, -70, 0, 16),
+                    Font = Enum.Font.GothamBold,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextColor3 = Color3.fromRGB(255, 255, 255),
+                    BackgroundTransparency = 1
+                }), "Text"),
+                AddThemeObject(SetProps(MakeElement("Label", uname, 12, 0.3), {
+                    Name = "Username",
+                    Position = UDim2.new(0, 60, 0, 26),
+                    Size = UDim2.new(1, -70, 0, 14),
+                    Font = Enum.Font.Gotham,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextColor3 = Color3.fromRGB(200, 200, 200),
+                    BackgroundTransparency = 1
+                }), "Text"),
+                AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 10), {
+                    Size = UDim2.new(0, 50, 0, 50),
+                    Position = UDim2.new(0, 5, 0, 5)
+                }), {
+                    SetProps(MakeElement("Image", "https://www.roblox.com/headshot-thumbnail/image?userId=" .. (vgs.ps:FindFirstChild(uname) and vgs.ps[uname].UserId or 1) .. "&width=420&height=420&format=png"), {
+                        Size = UDim2.new(1, 0, 1, 0),
+                        BackgroundTransparency = 1
+                    }),
+                    MakeElement("Corner", 1)
+                }), "Divider")
+            }), {
+                Parent = group or DdCont,
+                Size = UDim2.new(1, 0, 0, optH),
+                BackgroundTransparency = 1,
+                ClipsDescendants = true
+            }), "Divider")
+
+            local ucorn = Instance.new("UICorner", OptBtn:FindFirstChild("Frame"):FindFirstChild("ImageLabel"))
+            ucorn.CornerRadius = UDim.new(0, 10)
+        else
+            OptBtn = AddThemeObject(SetProps(SetChildren(MakeElement("Button", Color3.fromRGB(40, 40, 40)), {
+                MakeElement("Corner", 0, 6),
+                optIcon and SetProps(MakeElement("Image", optIcon), {
+                    Size = UDim2.new(0, 16, 0, 16),
+                    Position = UDim2.new(0, 8, 0.5, 0),
+                    AnchorPoint = Vector2.new(0, 0.5),
+                    Name = "Icon"
+                }) or MakeElement("TFrame"),
+                AddThemeObject(SetProps(MakeElement("Label", optTxt, 13, 0.4), {
+                    Position = UDim2.new(0, optIcon and 32 or 8, 0, 0),
+                    Size = UDim2.new(1, optIcon and -40 or -16, 1, 0),
+                    Name = "Title",
+                    TextXAlignment = Enum.TextXAlignment.Left
+                }), "Text"),
+                DropdownConfig.Multi and SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(60, 60, 60), 0, 2), {
+                    Size = UDim2.new(0, 16, 0, 16),
+                    Position = UDim2.new(1, -24, 0.5, 0),
+                    AnchorPoint = Vector2.new(0, 0.5),
+                    Name = "Checkbox"
+                }), {
+                    SetProps(MakeElement("Stroke"), {
+                        Color = Color3.fromRGB(60, 60, 60),
+                        Thickness = 1,
+                        Name = "Stroke"
+                    }),
+                    SetProps(MakeElement("Image", "rbxassetid://3944680095"), {
+                        Size = UDim2.new(0, 15, 0, 15),
+                        AnchorPoint = Vector2.new(0.5, 0.5),
+                        Position = UDim2.new(0.5, 0, 0.5, 0),
+                        ImageColor3 = Color3.fromRGB(255, 255, 255),
+                        Name = "Ico"
+                    })
+                }) or MakeElement("TFrame")
+            }), {
+                Parent = group or DdCont,
+                Size = UDim2.new(1, 0, 0, optH),
+                BackgroundTransparency = 1,
+                ClipsDescendants = true
+            }), "Divider")
+        end
+
+        AddConnection(OptBtn.MouseButton1Click, function()
+            if DropdownConfig.Multi then
+                local index = table.find(Dropdown.Value, optVal)
+                if index then
+                    table.remove(Dropdown.Value, index)
+                else
+                    table.insert(Dropdown.Value, optVal)
+                end
+                Dropdown:UpdSel()
+            else
+                Dropdown:Set(optVal)
+                Dropdown.Toggled = false
+                Dropdown.srchMode = false
+
+                if DropdownConfig.Searchable and SrchBox then
+                    SrchBox.Text = ""
+                    Dropdown.srchTxt = ""
+                    relfcs()
+                end
+
+                Dropdown:UpdVis()
+            end
+            pcall(function()
+                SaveCfg(game.GameId)
+            end)
+        end)
+
+        AddConnection(OptBtn.MouseEnter, function()
+            vgs.TS:Create(OptBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.8}):Play()
+        end)
+
+        AddConnection(OptBtn.MouseLeave, function()
+            local sel = DropdownConfig.Multi and table.find(Dropdown.Value, optVal) or (Dropdown.Value == optVal)
+            vgs.TS:Create(OptBtn, TweenInfo.new(0.15), {BackgroundTransparency = sel and 0.2 or 1}):Play()
+        end)
+
+        Dropdown.Buttons[optVal] = OptBtn
+        return OptBtn
+    end
+
+    local function CrtGrp(gName, opts)
+        local GrpFrame = SetChildren(SetProps(MakeElement("TFrame"), {
+            Size = UDim2.new(1, 0, 0, 0),
+            Parent = DdCont,
+            Name = " " .. gName,
+            AutomaticSize = Enum.AutomaticSize.Y
+        }), {
+            MakeElement("List", 0, 2),
+            AddThemeObject(SetProps(MakeElement("Label", " " .. gName, 12), {
+                Size = UDim2.new(1, -16, 0, 20),
+                Position = UDim2.new(0, 8, 0, 0),
+                Font = Enum.Font.GothamBold,
+                Name = "GroupHeader",
+                TextXAlignment = Enum.TextXAlignment.Left
+            }), "TextDark")
+        })
+
+        Dropdown.Groups[gName] = GrpFrame
+
+        for _, option in pairs(opts) do
+            CrtOpt(option, GrpFrame)
+        end
+
+        return GrpFrame
+    end
+
+    local function FiltrOpts()
+        if not DropdownConfig.Searchable or Dropdown.srchTxt == "" then
+            for _, btn in pairs(Dropdown.Buttons) do
+                btn.Visible = true
+            end
+            for _, group in pairs(Dropdown.Groups) do
+                group.Visible = true
+            end
+            return
+        end
+
+        local srchLow = string.lower(Dropdown.srchTxt)
+        for value, btn in pairs(Dropdown.Buttons) do
+            local srchTxt = ""
+            if Dropdown.isPDrop then
+                if btn:FindFirstChild("DisplayName") then
+                    srchTxt = srchTxt .. string.lower(btn.DisplayName.Text) .. " "
+                end
+                if btn:FindFirstChild("Username") then
+                    srchTxt = srchTxt .. string.lower(btn.Username.Text)
+                end
+            else
+                if btn:FindFirstChild("Title") then
+                    srchTxt = string.lower(btn.Title.Text)
+                end
+            end
+            btn.Visible = string.find(srchTxt, srchLow) ~= nil
+        end
+
+        for _, group in pairs(Dropdown.Groups) do
+            local hasVis = false
+            for _, child in pairs(group:GetChildren()) do
+                if child:IsA("TextButton") and child.Visible then
+                    hasVis = true
+                    break
+                end
+            end
+            group.Visible = hasVis
+        end
+    end
+
+    local function StaggerAnim()
+        local visibleBtns = {}
+        for _, btn in pairs(Dropdown.Buttons) do
+            if btn.Visible then
+                table.insert(visibleBtns, btn)
+            end
+        end
+
+        for i, btn in ipairs(visibleBtns) do
+            local delay = (i - 1) * 0.02
+            spawn(function()
+                wait(delay)
+                vgs.TS:Create(btn, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                    Position = UDim2.new(0, 0, 0, 0),
+                    BackgroundTransparency = btn.BackgroundTransparency
+                }):Play()
+            end)
+        end
+    end
+
+    function Dropdown:UpdSel(mode)
+        local selTxt = ""
+        if self.Multi then
+            if type(self.Value) == "table" and #self.Value > 0 then
+                local vVals = {}
+                for _, v in pairs(self.Value) do
+                    if type(v) == "string" or type(v) == "number" then
+                        table.insert(vVals, tostring(v))
+                    end
+                end
+                selTxt = #vVals > 0 and table.concat(vVals, ", ") or "Select options"
+            else
+                selTxt = "Select options"
+            end
+        else
+            selTxt = tostring(self.Value ~= "" and self.Value or "Select option")
+        end
+        DdFrame.Header.Selected.Text = selTxt
+
+        for value, btn in pairs(self.Buttons) do
+            local sel = self.Multi and table.find(self.Value, value) or (self.Value == value)
+            local twInf = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+            vgs.TS:Create(btn, twInf, {BackgroundTransparency = sel and 0.2 or 1}):Play()
+
+            if self.isPDrop then
+                if btn:FindFirstChild("DisplayName") then
+                    vgs.TS:Create(btn.DisplayName, twInf, {TextTransparency = sel and 0 or 0.4}):Play()
+                end
+                if btn:FindFirstChild("Username") then
+                    vgs.TS:Create(btn.Username, twInf, {TextTransparency = sel and 0 or 0.4}):Play()
+                end
+            else
+                if btn:FindFirstChild("Title") then
+                    vgs.TS:Create(btn.Title, twInf, {TextTransparency = sel and 0 or 0.4}):Play()
+                end
+            end
+
+            if self.Multi and btn:FindFirstChild("Checkbox") then
+                vgs.TS:Create(btn.Checkbox, twInf, {
+                    BackgroundColor3 = sel and OrionLib.Themes[OrionLib.SelectedTheme].Accent or OrionLib.Themes[OrionLib.SelectedTheme].Divider
+                }):Play()
+
+                if btn.Checkbox:FindFirstChild("Stroke") then
+                    vgs.TS:Create(btn.Checkbox.Stroke, twInf, {
+                        Color = sel and OrionLib.Themes[OrionLib.SelectedTheme].Accent or OrionLib.Themes[OrionLib.SelectedTheme].Stroke
+                    }):Play()
+                end
+
+                if btn.Checkbox:FindFirstChild("Ico") then
+                    vgs.TS:Create(btn.Checkbox.Ico, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                        ImageTransparency = sel and 0 or 1,
+                        Size = sel and UDim2.new(0, 15, 0, 15) or UDim2.new(0, 8, 0, 8)
+                    }):Play()
+                end
+            end
+        end
+
+        if self.Multi and DropdownConfig.Call and mode ~= 1 then
+            pcall(function()
+                DropdownConfig.Callback(self.Value)
+            end)
+        end
+    end
+
+    function Dropdown:UpdVis()
+        local srchTglH = DropdownConfig.Searchable and self.Toggled and 34 or 0
+        local srchBoxH = DropdownConfig.Searchable and self.srchMode and 34 or 0
+        local totSrchH = srchTglH + srchBoxH
+
+        DdCont.Visible = self.Toggled
+        DdFrame.Header.Line.Visible = self.Toggled
+
+        if DropdownConfig.Searchable and SrchTgl then
+            SrchTgl.Visible = self.Toggled
+        end
+
+        if DropdownConfig.Searchable and SrchCont then
+            SrchCont.Visible = self.srchMode
+        end
+
+        if not self.Toggled or not self.srchMode then
+            relfcs()
+        end
+
+        local newPos = UDim2.new(0, 0, 0, 38 + totSrchH)
+        local newSz = UDim2.new(1, 0, 1, -(38 + totSrchH))
+
+        vgs.TS:Create(DdCont, TweenInfo.new(0.15), {
+            Position = newPos,
+            Size = newSz
+        }):Play()
+
+        vgs.TS:Create(DdFrame.Header.Arrow, TweenInfo.new(0.15), {Rotation = self.Toggled and 0 or 180}):Play()
+
+        local cntH = 0
+        if self.Toggled then
+            local totBtns = 0
+            for _, btn in pairs(self.Buttons) do
+                if btn.Visible then
+                    totBtns = totBtns + 1
+                end
+            end
+            local btnH = self.isPDrop and 60 or 28
+            cntH = math.min(totBtns, MaxElems) * btnH + totSrchH
+        end
+
+        local totH = self.Toggled and (38 + cntH) or 38
+        vgs.TS:Create(DdFrame, TweenInfo.new(0.15), {Size = UDim2.new(1, 0, 0, totH)}):Play()
+
+        if self.Toggled then
+            for _, btn in pairs(self.Buttons) do
+                if btn.Visible then
+                    btn.Position = UDim2.new(0, -10, 0, 0)
+                end
+            end
+            task.wait(0.05)
+            StaggerAnim()
+        end
+
+        if DropdownConfig.Searchable and SrchBox then
+            if self.Toggled and self.srchMode then
+                spawn(function()
+                    wait(0.1)
+                    SrchBox:CaptureFocus()
+                end)
+            else
+                relfcs()
+                if not self.srchMode then
+                    SrchBox.Text = ""
+                    self.srchTxt = ""
+                    FiltrOpts()
+                end
+            end
+        end
+    end
+
+    function Dropdown:Get()
+        return self.Value
+    end
+
+    function Dropdown:Has(Value)
+        if DropdownConfig.Multi then
+            return table.find(self.Value, Value) ~= nil
+        else
+            return self.Value == Value
+        end
+    end
+
+    function Dropdown:Set(Value, AddMode)
+        if DropdownConfig.Multi then
+            local changed = false
+
+            if AddMode ~= nil then
+                local values = type(Value) == "table" and Value or {Value}
+                for _, v in pairs(values) do
+                    if not OptionExists(v) then continue end -- CORRIGIDO
+
+                    local index = table.find(self.Value, v)
+                    if AddMode and not index then
+                        table.insert(self.Value, v)
+                        changed = true
+                    elseif not AddMode and index then
+                        table.remove(self.Value, index)
+                        changed = true
+                    end
+                end
+            else
+                local newValues = type(Value) == "table" and Value or {Value}
+                local validValues = {}
+
+                for _, v in pairs(newValues) do
+                    if OptionExists(v) then -- CORRIGIDO
+                        table.insert(validValues, v)
+                    end
+                end
+
+                if #validValues ~= #self.Value then
+                    changed = true
+                else
+                    for _, v in pairs(validValues) do
+                        if not table.find(self.Value, v) then
+                            changed = true
+                            break
+                        end
+                    end
+                end
+
+                self.Value = validValues
+            end
+
+            if changed then
+                self:UpdSel(1)
+                if DropdownConfig.Call then
+                    pcall(function()
+                        DropdownConfig.Callback(self.Value)
+                    end)
+                end
+            end
+        else
+            if not OptionExists(Value) then -- CORRIGIDO (era table.find(self.Options, Value))
+                self.Value = "..."
+                DdFrame.Header.Selected.Text = self.Value
+
+                for _, v in pairs(self.Buttons) do
+                    vgs.TS:Create(v, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
+
+                    if self.isPDrop then
+                        if v:FindFirstChild("DisplayName") then
+                            vgs.TS:Create(v.DisplayName, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
+                        end
+                        if v:FindFirstChild("Username") then
+                            vgs.TS:Create(v.Username, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
+                        end
+                    else
+                        if v:FindFirstChild("Title") then
+                            vgs.TS:Create(v.Title, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
+                        end
+                    end
+                end
+                return
+            end
+
+            self.Value = Value
+            DdFrame.Header.Selected.Text = self.Value
+
+            for _, v in pairs(self.Buttons) do
+                vgs.TS:Create(v, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
+
+                if self.isPDrop then
+                    if v:FindFirstChild("DisplayName") then
+                        vgs.TS:Create(v.DisplayName, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
+                    end
+                    if v:FindFirstChild("Username") then
+                        vgs.TS:Create(v.Username, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
+                    end
+                else
+                    if v:FindFirstChild("Title") then
+                        vgs.TS:Create(v.Title, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
+                    end
+                end
+            end
+
+            if self.Buttons[Value] then
+                vgs.TS:Create(self.Buttons[Value], TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.2}):Play()
+
+                if self.isPDrop then
+                    if self.Buttons[Value]:FindFirstChild("DisplayName") then
+                        vgs.TS:Create(self.Buttons[Value].DisplayName, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+                    end
+                    if self.Buttons[Value]:FindFirstChild("Username") then
+                        vgs.TS:Create(self.Buttons[Value].Username, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+                    end
+                else
+                    if self.Buttons[Value]:FindFirstChild("Title") then
+                        vgs.TS:Create(self.Buttons[Value].Title, TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+                    end
+                end
+            end
+
+            pcall(function()
+                DropdownConfig.Callback(self.Value)
+            end)
+        end
+    end
+
+    function Dropdown:Refresh(Options, Delete)
+        if Delete then
+            for _, v in pairs(self.Buttons) do
+                v:Destroy()
+            end
+            for _, v in pairs(self.Groups) do
+                v:Destroy()
+            end
+            table.clear(self.Options)
+            table.clear(self.Buttons)
+            table.clear(self.Groups)
+        end
+        self.Options = Options
+        DropdownConfig.Options = Options
+        self.isPDrop = DtctPDrop()
+
+        if DropdownConfig.Grouped then
+            for gName, grpOpts in pairs(Options) do
+                CrtGrp(gName, grpOpts)
+            end
+        else
+            for _, option in pairs(Options) do
+                CrtOpt(option)
+            end
+        end
+
+        if self.isPDrop then
+            local preload = {}
+            for _, option in pairs(Options) do
+                local optTxt = type(option) == "table" and (option.text or option.name) or tostring(option)
+                local uname = optTxt:match("^(.-) %(") or optTxt
+                if vgs and vgs.ps and vgs.ps:FindFirstChild(uname) then
+                    local userId = vgs.ps[uname].UserId
+                    local imurl = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. userId .. "&width=420&height=420&format=png"
+                    table.insert(preload, imurl)
+                end
+            end
+            if #preload > 0 then
+                task.spawn(function()
+                    game:GetService("ContentProvider"):PreloadAsync(preload)
+                end)
+            end
+        end
+
+        if DropdownConfig.Searchable and self.srchTxt ~= "" then
+            FiltrOpts()
+        end
+
+        if self.Toggled then
+            self:UpdVis()
+        end
+        self:UpdSel()
+    end
+
+    AddConnection(Click.MouseButton1Click, function()
+        Dropdown.Toggled = not Dropdown.Toggled
+        if not Dropdown.Toggled then
+            Dropdown.srchMode = false
+        end
+        Dropdown:UpdVis()
+    end)
+
+    if DropdownConfig.Searchable and SrchTgl then
+        AddConnection(SrchTgl.MouseButton1Click, function()
+            Dropdown.srchMode = not Dropdown.srchMode
+            vgs.TS:Create(SrchTgl.SearchArrow, TweenInfo.new(0.15), {
+                Rotation = Dropdown.srchMode and 0 or 180
+            }):Play()
+            Dropdown:UpdVis()
+        end)
+
+        AddConnection(SrchTgl.MouseEnter, function()
+            vgs.TS:Create(SrchTgl.SearchArrow, TweenInfo.new(0.15), {
+                ImageColor3 = Color3.fromRGB(255, 255, 255)
+            }):Play()
+        end)
+
+        AddConnection(SrchTgl.MouseLeave, function()
+            vgs.TS:Create(SrchTgl.SearchArrow, TweenInfo.new(0.15), {
+                ImageColor3 = Color3.fromRGB(160, 160, 160)
+            }):Play()
+        end)
+    end
+
+    if DropdownConfig.Searchable and SrchBox then
+        AddConnection(SrchBox:GetPropertyChangedSignal("Text"), function()
+            Dropdown.srchTxt = SrchBox.Text
+            FiltrOpts()
+            Dropdown:UpdVis()
+        end)
+
+        AddConnection(SrchBox.Focused, function()
+            SrchBox.TextXAlignment = Enum.TextXAlignment.Left
+        end)
+
+        AddConnection(SrchBox.FocusLost, function()
+            if SrchBox.Text == "" then
+                SrchBox.TextXAlignment = Enum.TextXAlignment.Left
+            end
+        end)
+    end
+
+    AddConnection(vgs.UIS.InputBegan, function(input, gameProcessed)
+        if gameProcessed or not Dropdown.Toggled then
+            return
+        end
+        if input.KeyCode == Enum.KeyCode.Escape then
+            Dropdown.Toggled = false
+            Dropdown.srchMode = false
+            relfcs()
+            Dropdown:UpdVis()
+        end
+    end)
+
+    Dropdown:Refresh(Dropdown.Options, false)
+
+    if DropdownConfig.Multi then
+        Dropdown:UpdSel(1)
+    else
+        Dropdown:Set(Dropdown.Value)
+    end
+
+    if DropdownConfig.Flag then
+        OrionLib.Flags[DropdownConfig.Flag] = Dropdown
+    end
+
+    table.insert(OrionLib.Dropdowns, Dropdown)
+
+    if vgs and vgs.ps then
+        AddConnection(vgs.ps.PlayerAdded, function(plr)
+            Dropdown.isPDrop = DtctPDrop()
+
+            if DropdownConfig.Searchable and Dropdown.srchTxt ~= "" then
+                FiltrOpts()
+            end
+        end)
+
+        vgs.ps.PlayerRemoving:Connect(function(plr)
+            if not Dropdown.isPDrop then return end
+
+            local pName = plr.Name
+
+            for i = #Dropdown.Options, 1, -1 do
+                local optTxt = type(Dropdown.Options[i]) == "table" and (Dropdown.Options[i].text or Dropdown.Options[i].name) or tostring(Dropdown.Options[i])
+                local name = optTxt:match("^(.-) %(") or optTxt
+
+                if name == pName then
+                    local optVal = type(Dropdown.Options[i]) == "table" and (Dropdown.Options[i].value or optTxt) or Dropdown.Options[i]
+
+                    if Dropdown.Buttons[optVal] then
+                        Dropdown.Buttons[optVal]:Destroy()
+                        Dropdown.Buttons[optVal] = nil
+                    end
+
+                    table.remove(Dropdown.Options, i)
+                end
+            end
+
+            if DropdownConfig.Multi then
+                for i = #Dropdown.Value, 1, -1 do
+                    local optTxt = Dropdown.Value[i]
+                    local name = optTxt:match("^(.-) %(") or optTxt
+
+                    if name == pName then
+                        table.remove(Dropdown.Value, i)
+                    end
+                end
+                DropdownConfig.Callback(Dropdown.Value)
+            else
+                local currName = Dropdown.Value:match("^(.-) %(") or Dropdown.Value
+                if currName == pName then
+                    if DropdownConfig.PlrLeftNote then
+                        OrionLib:MakeNotification({
+                            Name = "Selected Player left.",
+                            Content = plr.DisplayName .. " left the Game.",
+                            Image = "rbxassetid://7733911828",
+                            Time = 5
+                        })
+                    end
+                    Dropdown:Set("...")
+                end
+            end
+
+            Dropdown:UpdSel()
+
+            if DropdownConfig.Searchable and Dropdown.srchTxt ~= "" then
+                FiltrOpts()
+            end
+
+            if Dropdown.Toggled then
+                Dropdown:UpdVis()
+            end
+        end)
+    end
+
+    return Dropdown
+end
 			function ElementFunction:FreeMouseDrp()
 				return self:AddDropdown({
 					Name = "Unlock Mouse Mode",
