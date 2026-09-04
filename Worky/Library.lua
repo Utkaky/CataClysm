@@ -549,6 +549,7 @@ ScreenGui.Parent = game:GetService("CoreGui")
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local U, Tw = game:GetService("UserInputService"), game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
 
 do
 	function addToTheme(name, obj)
@@ -1444,10 +1445,29 @@ function Library:Window(p)
 	local Theme = p.Theme or 'Dark'
 	local Keybind = p.Config.Keybind or Enum.KeyCode.LeftControl
 	local Size = p.Config.Size or UDim2.new(0, 530,0, 400)
+	local FreeMouse = p.Config.FreeMouse or false
 
 	local R, HAA = false, false
 	local HasChangeTheme = p.Theme
 	local IsTheme = p.Theme
+	local FreeMouseButton = Instance.new("TextButton")
+	FreeMouseButton.Name = "FreeMouse"
+	FreeMouseButton.Parent = ScreenGui
+	FreeMouseButton.BackgroundTransparency = 1
+	FreeMouseButton.BorderSizePixel = 0
+	FreeMouseButton.Modal = true
+	FreeMouseButton.Size = UDim2.new(0, 0, 0, 0)
+	FreeMouseButton.Visible = false
+	FreeMouseButton.Text = ""
+
+	local function setFreeMouse(enabled)
+		U.MouseIconEnabled = enabled
+		FreeMouseButton.Visible = enabled
+	end
+
+	if FreeMouse then
+		setFreeMouse(true)
+	end
 
 	local Shadow_1 = Instance.new("ImageLabel")
 	local UIPadding_1 = Instance.new("UIPadding")
@@ -1465,7 +1485,7 @@ function Library:Window(p)
 	Shadow_1.Size = Size
 	Shadow_1.Image = "rbxassetid://1316045217"
 	Shadow_1.ImageColor3 = Color3.fromRGB(24, 24, 31)
-	Shadow_1.ImageTransparency = 0.8
+	Shadow_1.ImageTransparency = 1
 	Shadow_1.ScaleType = Enum.ScaleType.Slice
 	Shadow_1.SliceCenter = Rect.new(10, 10, 118, 118)
 	Shadow_1.Visible = false
@@ -1488,6 +1508,26 @@ function Library:Window(p)
 	Background_1.Size = UDim2.new(1, 0,1, 0)
 	Background_1.ClipsDescendants = true
 	Background_1.GroupTransparency = 1
+
+	local BackgroundImage = Instance.new("ImageLabel")
+	BackgroundImage.Name = "BackgroundImage"
+	BackgroundImage.Parent = Background_1
+	BackgroundImage.BackgroundTransparency = 1
+	BackgroundImage.BorderSizePixel = 0
+	BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
+	BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
+	BackgroundImage.ScaleType = Enum.ScaleType.Crop
+	BackgroundImage.ZIndex = 0
+
+	local BackgroundOverlay = Instance.new("Frame")
+	BackgroundOverlay.Name = "CustomOverlay"
+	BackgroundOverlay.Parent = Background_1
+	BackgroundOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	BackgroundOverlay.BackgroundTransparency = 1
+	BackgroundOverlay.BorderSizePixel = 0
+	BackgroundOverlay.Size = UDim2.new(1, 0, 1, 0)
+	BackgroundOverlay.Position = UDim2.new(0, 0, 0, 0)
+	BackgroundOverlay.ZIndex = 0
 
 	Shadow_1.Visible = true  
 	local org = Background_1.Size
@@ -1809,6 +1849,95 @@ function Library:Window(p)
 		DefaultIndex = 1
 	}
 
+	local function normalizeTransparency(value)
+		value = tonumber(value) or 0
+		if value > 1 then
+			value = value / 100
+		end
+		return math.clamp(value, 0, 1)
+	end
+
+	local function resolveBackgroundImage(image)
+		if type(image) ~= "string" or not image:match("^https?://") then
+			return image
+		end
+
+		local getAsset = getsynasset or getcustomasset
+		if not getAsset or not writefile or not game.HttpGet then
+			warn("External background images require getcustomasset/getsynasset and writefile")
+			return nil
+		end
+
+		local filePath = "WorkyLibraryBackground_" .. HttpService:GenerateGUID(false) .. ".jpg"
+		local success, asset = pcall(function()
+			writefile(filePath, game:HttpGet(image))
+			return getAsset(filePath)
+		end)
+
+		if success then
+			return asset
+		end
+
+		warn("Failed to load external background image: " .. tostring(asset))
+		return nil
+	end
+
+	function Tabs:SetBackGroundImage(image)
+		if image == nil or image == "" or image == "None" then
+			BackgroundImage.Image = ""
+			return
+		end
+
+		if type(image) == "number" or (type(image) == "string" and tonumber(image)) then
+			image = "rbxassetid://" .. tostring(image)
+		end
+
+		image = resolveBackgroundImage(image)
+		if image then
+			BackgroundImage.Image = tostring(image)
+		end
+	end
+
+	Tabs.SetBackgroundImage = Tabs.SetBackGroundImage
+
+	function Tabs:SetTransparencyBackGround(value)
+		BackgroundOverlay.BackgroundTransparency = normalizeTransparency(value)
+	end
+
+	function Tabs:SetSectionBackGroundTransparency(value)
+		value = normalizeTransparency(value)
+		for _, page in ipairs(Page_1:GetChildren()) do
+			if page:IsA("Frame") and page.Name == "InPage" then
+				page.BackgroundTransparency = value
+			end
+		end
+	end
+
+	function Tabs:SetFunctionBackGroundTransparency(value)
+		value = normalizeTransparency(value)
+		for _, page in ipairs(Page_1:GetChildren()) do
+			if page:IsA("Frame") and page.Name == "InPage" then
+				local scrollingFrame = page:FindFirstChild("ScrollingFrame")
+				if scrollingFrame then
+					for _, item in ipairs(scrollingFrame:GetChildren()) do
+						if item:IsA("Frame") and item.Name == "Real Background" then
+							local background = item:FindFirstChild("Background")
+							if background and not background:FindFirstChild("Section") then
+								background.BackgroundTransparency = value
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+
+	Tabs.SetTransparencyBackground = Tabs.SetTransparencyBackGround
+	Tabs.SetSectionBackgroundTransparency = Tabs.SetSectionBackGroundTransparency
+	Tabs.SetFunctionBackgroundTransparency = Tabs.SetFunctionBackGroundTransparency
+	Tabs.SetTransparencySection = Tabs.SetSectionBackGroundTransparency
+	Tabs.SetTransparencyFunction = Tabs.SetFunctionBackGroundTransparency
+
 	function Tabs:SelectTab(p)
 		Tabs.DefaultIndex = p or 1
 	end
@@ -1872,10 +2001,6 @@ function Tabs:Line()
 		end
 	end)
 end
-
--- ========================================
--- FUNÇÃO TAB COM PROXIMITY HOVER
--- ========================================
 
 function Tabs:Tab(p)
 	local Title = p.Title or 'null'
@@ -1963,6 +2088,7 @@ function Tabs:Tab(p)
 	InPage_1.Parent = Page_1
 	InPage_1.AnchorPoint = Vector2.new(0.5 ,0.5)
 	InPage_1.BackgroundColor3 = Color3.fromRGB(24,24,31)
+	InPage_1.BackgroundTransparency = 1
 	InPage_1.BorderColor3 = Color3.fromRGB(0,0,0)
 	InPage_1.BorderSizePixel = 0
 	InPage_1.Size = UDim2.new(1, 0,1, 0)
@@ -2218,11 +2344,13 @@ function Tabs:Tab(p)
 		end
 
 		function Func:Toggle(p)
+			p = p or {}
 			local Value = p.Value or false
 			local Image = p.Image or ''
 			local Callback = p.Callback or function() end
 			local Title = p.Title or 'null'
 			local Desc = p.Desc or ''
+			local Bindable = p.Bindable
 
 			local Toggle, Config = background(ScrollingFrame_1, Title, Desc, Image, 'Toggle')
 
@@ -2244,8 +2372,10 @@ function Tabs:Tab(p)
 			F_1.BorderSizePixel = 0
 			F_1.Position = UDim2.new(1, 0,0.5, 0)
 			F_1.Size = UDim2.new(0, 100,0.800000012, 0)
+			F_1.ZIndex = 2
 
 			UIListLayout_1.Parent = F_1
+			UIListLayout_1.FillDirection = Enum.FillDirection.Horizontal
 			UIListLayout_1.HorizontalAlignment = Enum.HorizontalAlignment.Right
 			UIListLayout_1.SortOrder = Enum.SortOrder.LayoutOrder
 			UIListLayout_1.VerticalAlignment = Enum.VerticalAlignment.Center
@@ -2254,6 +2384,7 @@ function Tabs:Tab(p)
 			UIPadding_1.PaddingRight = UDim.new(0,13)
 
 			Frame_1.Parent = F_1
+			Frame_1.LayoutOrder = 0
 			Frame_1.BackgroundColor3 = Color3.fromRGB(36, 35, 48)
 			Frame_1.BorderColor3 = Color3.fromRGB(0,0,0)
 			Frame_1.BorderSizePixel = 0
@@ -2286,10 +2417,120 @@ function Tabs:Tab(p)
 			UIPadding_2.PaddingRight = UDim.new(0,2)
 
 			local Click = click(Toggle)
+			Click.ZIndex = 1
 
 			Value = not Value
+			local BindBox
+			local BindConnection
+			local Binding = false
+			local BoundKey
+			local BoundHold = false
+			local Holding = false
+			local change
+			local Bind
 
-			local function change()
+			local function getBind(key)
+				if typeof(key) == "string" then
+					if key == "" or key == "None" then
+						return nil
+					end
+					if key:match("^MouseButton[123]$") then
+						return Enum.UserInputType[key]
+					end
+					return Enum.KeyCode[key]
+				end
+				return key
+			end
+
+			local function bindName(key)
+				return key and key.Name or "None"
+			end
+
+			local function createBind(config)
+				config = config or {}
+				BoundKey = getBind(config.Default or config.Key or Enum.KeyCode.E)
+				BoundHold = config.Hold or false
+				Bind = Bind or {}
+				Bind.Value = BoundKey
+				Bind.Hold = BoundHold
+
+				BindBox = Instance.new("TextButton")
+				BindBox.Name = "BindBox"
+				BindBox.Parent = F_1
+				BindBox.LayoutOrder = 1
+				BindBox.Size = UDim2.new(0, 42, 0, 20)
+				BindBox.BackgroundColor3 = Color3.fromRGB(24, 24, 31)
+				BindBox.BackgroundTransparency = 0
+				BindBox.BorderSizePixel = 0
+				BindBox.AutoButtonColor = false
+				BindBox.Active = true
+				BindBox.Selectable = false
+				BindBox.Font = Enum.Font.GothamBold
+				BindBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+				BindBox.TextSize = 10
+				BindBox.Text = bindName(BoundKey)
+				BindBox.ZIndex = 3
+				F_1.Size = UDim2.new(0, 150, 0.800000012, 0)
+				Instance.new("UICorner", BindBox).CornerRadius = UDim.new(0, 4)
+				local bindStroke = Instance.new("UIStroke", BindBox)
+				bindStroke.Transparency = 0.95
+				bindStroke.Color = Color3.fromRGB(255, 255, 255)
+
+				local function setBind(key)
+					BoundKey = getBind(key) or BoundKey
+					Binding = false
+					Bind.Value = BoundKey
+					BindBox.Text = bindName(BoundKey)
+				end
+
+				BindBox.InputEnded:Connect(function(input)
+					if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
+					if Binding then return end
+					Binding = true
+					BindBox.Text = "..."
+				end)
+
+				BindConnection = U.InputBegan:Connect(function(input, gameProcessed)
+					if gameProcessed or U:GetFocusedTextBox() then return end
+					if Binding then
+						if input.UserInputType == Enum.UserInputType.Keyboard then
+							setBind(input.KeyCode)
+						elseif input.UserInputType.Name:match("^MouseButton[123]$") then
+							setBind(input.UserInputType)
+						end
+						return
+					end
+
+					if input.KeyCode == BoundKey or input.UserInputType == BoundKey then
+						if BoundHold then
+							Holding = true
+							pcall(Callback, Holding)
+						else
+							change()
+						end
+					end
+				end)
+
+				U.InputEnded:Connect(function(input)
+					if BoundHold and Holding and (input.KeyCode == BoundKey or input.UserInputType == BoundKey) then
+						Holding = false
+						pcall(Callback, Holding)
+					end
+				end)
+
+				function Bind:Set(key)
+					setBind(key)
+				end
+
+				Bind.SetKey = Bind.Set
+				function Bind:Get()
+					return BoundKey
+				end
+
+				return Bind
+			end
+
+			change = function()
 				Value = not Value
 				if Value then
 					Config:SetTextTransparencyTitle(0)
@@ -2329,6 +2570,11 @@ function Tabs:Tab(p)
 
 			local New = {}
 
+			function New:CreateBind(config)
+				New.Bind = createBind(config)
+				return New.Bind
+			end
+
 			function New:SetTitle(t)
 				Config:SetTitle(t)
 			end
@@ -2344,6 +2590,10 @@ function Tabs:Tab(p)
 			function New:SetValue(t)
 				Value = not t
 				change()
+			end
+
+			if Bindable then
+				New.Bind = createBind(type(Bindable) == "table" and Bindable or {})
 			end
 
 			return New
@@ -5151,6 +5401,9 @@ end
 			isopen = not isopen
 			if isopen then
 				oSize = Background_1.Size
+				if FreeMouse then
+					setFreeMouse(false)
+				end
 				local close = tw({
 					v = Background_1,
 					t = 0.15,
@@ -5166,6 +5419,9 @@ end
 				Shadow_1.Visible = false
 			else
 				Shadow_1.Visible = true  
+				if FreeMouse then
+					setFreeMouse(true)
+				end
 				local open = tw({
 					v = Background_1,
 					t = 0.15,
@@ -5289,6 +5545,9 @@ end
 					Title = 'Confirm',
 					Color = Color3.fromRGB(0, 188, 0),
 					Callback = function()
+						if FreeMouse then
+							setFreeMouse(false)
+						end
 						ScreenGui:Destroy()
 					end,
 				},
