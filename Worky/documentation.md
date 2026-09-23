@@ -7,7 +7,7 @@ A UI library for Roblox/Luau. It gives you a draggable, resizable window with ta
 ## Loading the library
 
 ```lua
-local Library = loadstring(game:HttpGet("https://api.rubis.app/v2/scrap/RZP5f8FnksKPpY3O/raw"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Utkaky/CataClysm/refs/heads/main/Worky/Library.lua"))()
 ```
 
 The script destroys any previous `WorkyLibrary` ScreenGui under `CoreGui` before creating a new one, so re-running the loadstring is safe and won't leave duplicate windows behind.
