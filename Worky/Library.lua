@@ -1,3 +1,4 @@
+--v 1.3
 Library = {}
 SaveTheme = {}
 local themes = {
@@ -551,7 +552,6 @@ ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 local U, Tw = game:GetService("UserInputService"), game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 
-do
 	function addToTheme(name, obj)
 		if not SaveTheme[name] then
 			SaveTheme[name] = {}
@@ -1435,7 +1435,6 @@ end
 
 		return itemslist
 	end
-end
 
 function Library:Window(p)
 
@@ -1449,7 +1448,8 @@ function Library:Window(p)
 
 	local R, HAA = false, false
 	local HasChangeTheme = p.Theme
-	local IsTheme = p.Theme
+	--local IsTheme = p.Theme
+	local IsTheme = Theme
 	local FreeMouseButton = Instance.new("TextButton")
 	FreeMouseButton.Name = "FreeMouse"
 	FreeMouseButton.Parent = ScreenGui
@@ -1848,6 +1848,21 @@ function Library:Window(p)
 		List = {},
 		DefaultIndex = 1
 	}
+
+	function Tabs:SetTitle(newTitle)
+		newTitle = tostring(newTitle or "null")
+		if Title_2 then
+			Title_2.Text = newTitle
+		end
+	end
+
+	function Tabs:SetDesc(newDesc)
+		newDesc = tostring(newDesc or "")
+		if Desc_1 then
+			Desc_1.Text = newDesc
+			Desc_1.Visible = newDesc ~= ""
+		end
+	end
 
 	local function normalizeTransparency(value)
 		value = tonumber(value) or 0
@@ -2401,12 +2416,13 @@ function Tabs:Tab(p)
 			Frame_2.Position = UDim2.new(0, 0,0.5, 0)
 			Frame_2.Size = UDim2.new(0, 13,0, 13)
 
+			local currentTheme = themes[IsTheme] or themes.Dark
 			if Value then
-				Frame_1.BackgroundColor3 = themes[IsTheme].Function.Toggle.True['Toggle Background']
-				Frame_2.BackgroundColor3 = themes[IsTheme].Function.Toggle.True['Toggle Value']
+				Frame_1.BackgroundColor3 = currentTheme.Function.Toggle.True['Toggle Background']
+				Frame_2.BackgroundColor3 = currentTheme.Function.Toggle.True['Toggle Value']
 			else
-				Frame_1.BackgroundColor3 = themes[IsTheme].Function.Toggle.False['Toggle Background']
-				Frame_2.BackgroundColor3 = themes[IsTheme].Function.Toggle.False['Toggle Value']
+				Frame_1.BackgroundColor3 = currentTheme.Function.Toggle.False['Toggle Background']
+				Frame_2.BackgroundColor3 = currentTheme.Function.Toggle.False['Toggle Value']
 			end
 
 			UICorner_3.Parent = Frame_2
@@ -2627,67 +2643,83 @@ function Tabs:Tab(p)
 		end
 
 		function Func:Button(p)
-			local Title = p.Title or 'null'
-			local Desc = p.Desc or ''
-			local Image = p.Image or ''
-			local Callback = p.Callback or function() end
+    local Title = p.Title or 'null'
+    local Desc = p.Desc or ''
+    local Image = p.Image or ''
+    local Callback = p.Callback or function() end
 
-			local Button, Config = background(ScrollingFrame_1, Title, Desc, Image, 'Button')
+    local Button, Config = background(ScrollingFrame_1, Title, Desc, Image, 'Button')
 
-			Config:SetTextTransparencyTitle(0)
-			Config:SetSizeT(50)
+    Config:SetTextTransparencyTitle(0)
+    Config:SetSizeT(50)
 
-			Button.ClipsDescendants = true
+    Button.ClipsDescendants = true
 
-			local F = Instance.new("Frame")
-			local UIListLayout_1 = Instance.new("UIListLayout")
-			local UIPadding_1 = Instance.new("UIPadding")
-			local Image_1 = Instance.new("ImageLabel")
+    local F = Instance.new("Frame")
+    local UIListLayout_1 = Instance.new("UIListLayout")
+    local UIPadding_1 = Instance.new("UIPadding")
+    local Image_1 = Instance.new("ImageLabel")
 
-			F.Name = "F"
-			F.Parent = Button
-			F.AnchorPoint = Vector2.new(1, 0.5)
-			F.BackgroundColor3 = Color3.fromRGB(255,255,255)
-			F.BackgroundTransparency = 1
-			F.BorderColor3 = Color3.fromRGB(0,0,0)
-			F.BorderSizePixel = 0
-			F.Position = UDim2.new(1, 0,0.5, 0)
-			F.Size = UDim2.new(0, 50,0.800000012, 0)
+    F.Name = "F"
+    F.Parent = Button
+    F.AnchorPoint = Vector2.new(1, 0.5)
+    F.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    F.BackgroundTransparency = 1
+    F.BorderColor3 = Color3.fromRGB(0,0,0)
+    F.BorderSizePixel = 0
+    F.Position = UDim2.new(1, 0,0.5, 0)
+    F.Size = UDim2.new(0, 50,0.800000012, 0)
 
-			UIListLayout_1.Parent = F
-			UIListLayout_1.Padding = UDim.new(0,8)
-			UIListLayout_1.FillDirection = Enum.FillDirection.Horizontal
-			UIListLayout_1.HorizontalAlignment = Enum.HorizontalAlignment.Right
-			UIListLayout_1.SortOrder = Enum.SortOrder.LayoutOrder
-			UIListLayout_1.VerticalAlignment = Enum.VerticalAlignment.Center
+    UIListLayout_1.Parent = F
+    UIListLayout_1.Padding = UDim.new(0,8)
+    UIListLayout_1.FillDirection = Enum.FillDirection.Horizontal
+    UIListLayout_1.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    UIListLayout_1.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout_1.VerticalAlignment = Enum.VerticalAlignment.Center
 
-			UIPadding_1.Parent = F
-			UIPadding_1.PaddingRight = UDim.new(0,13)
+    UIPadding_1.Parent = F
+    UIPadding_1.PaddingRight = UDim.new(0,13)
 
-			Image_1.Name = "Image"
-			Image_1.Parent = F
-			Image_1.AnchorPoint = Vector2.new(1, 0.5)
-			Image_1.BackgroundColor3 = Color3.fromRGB(255,255,255)
-			Image_1.BackgroundTransparency = 1
-			Image_1.BorderColor3 = Color3.fromRGB(0,0,0)
-			Image_1.BorderSizePixel = 0
-			Image_1.Position = UDim2.new(1, 0,0.5, 0)
-			Image_1.Size = UDim2.new(0, 20,0, 20)
-			Image_1.Image = "rbxassetid://14923748517"
-			Image_1.ImageTransparency = 0.3
+    Image_1.Name = "Image"
+    Image_1.Parent = F
+    Image_1.AnchorPoint = Vector2.new(1, 0.5)
+    Image_1.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    Image_1.BackgroundTransparency = 1
+    Image_1.BorderColor3 = Color3.fromRGB(0,0,0)
+    Image_1.BorderSizePixel = 0
+    Image_1.Position = UDim2.new(1, 0,0.5, 0)
+    Image_1.Size = UDim2.new(0, 20,0, 20)
+    Image_1.Image = "rbxassetid://14923748517"
+    Image_1.ImageTransparency = 0.3
 
-			local Click = click(Button)
-			Click.MouseButton1Click:Connect(function()
-				Button.AnchorPoint = Vector2.new(0.5, 0.5)
-				Button.Position = UDim2.new(0.5, 0, 0.5,0)
-				jc(Click, Button)
-				tw({v = Button, t = 0.15, s = Enum.EasingStyle.Back, d = "Out", g = {Size = UDim2.new(.9, 0,.9, 0)}}):Play()
-				delay(.06, function()
-					tw({v = Button, t = 0.15, s = Enum.EasingStyle.Back, d = "Out", g = {Size = UDim2.new(1, 0,1, 0)}}):Play()
-				end)
-				pcall(Callback)
-			end)
-		end
+    local Click = click(Button)
+    Click.MouseButton1Click:Connect(function()
+        Button.AnchorPoint = Vector2.new(0.5, 0.5)
+        Button.Position = UDim2.new(0.5, 0, 0.5,0)
+        jc(Click, Button)
+        tw({v = Button, t = 0.15, s = Enum.EasingStyle.Back, d = "Out", g = {Size = UDim2.new(.9, 0,.9, 0)}}):Play()
+        delay(.06, function()
+            tw({v = Button, t = 0.15, s = Enum.EasingStyle.Back, d = "Out", g = {Size = UDim2.new(1, 0,1, 0)}}):Play()
+        end)
+        pcall(Callback)
+    end)
+
+    local New = {}
+
+    function New:SetTitle(t)
+        Config:SetTitle(t)
+    end
+
+    function New:SetDesc(t)
+        Config:SetDesc(t)
+    end
+
+    function New:SetVisible(t)
+        Button.Visible = t
+    end
+
+    return New
+end
 
 		function Func:Slider(p)
 			local Title = p.Title or 'null'
@@ -5100,6 +5132,283 @@ end
 		end)
 	end
 
+function Tabs:NotifyAsk(p)
+    local Title = p.Title or 'null'
+    local Desc = p.Desc or ''
+    local Time = p.Time or 10
+    local OnAccept = p.OnAccept or function() end
+    local OnDecline = p.OnDecline or function() end
+    local AcceptText = p.AcceptText or "Yes"
+    local DeclineText = p.DeclineText or "No"
+
+    local Shadow = Instance.new("ImageLabel")
+    local UIPadding_1 = Instance.new("UIPadding")
+    local Background_1 = Instance.new("CanvasGroup")
+    local UICorner_1 = Instance.new("UICorner")
+    local Frame_1 = Instance.new("Frame")
+    local Text_1 = Instance.new("Frame")
+    local UIPadding_2 = Instance.new("UIPadding")
+    local Title_1 = Instance.new("TextLabel")
+    local UIListLayout_1 = Instance.new("UIListLayout")
+    local Description_1 = Instance.new("TextLabel")
+    local Frame_2 = Instance.new("Frame")
+    local ButtonFrame = Instance.new("Frame")
+    local UIListLayout_2 = Instance.new("UIListLayout")
+    local AcceptBtn = Instance.new("TextButton")
+    local DeclineBtn = Instance.new("TextButton")
+    local AcceptCorner = Instance.new("UICorner")
+    local DeclineCorner = Instance.new("UICorner")
+
+    Shadow.Name = "Shadow"
+    Shadow.Parent = Notification
+    Shadow.BackgroundColor3 = Color3.fromRGB(163,162,165)
+    Shadow.BackgroundTransparency = 1
+    Shadow.Size = UDim2.new(0, 180,0, 0)
+    Shadow.Image = "rbxassetid://1316045217"
+    Shadow.ImageColor3 = themes[IsTheme].Shadow
+    Shadow.ImageTransparency = 0.5
+    Shadow.ScaleType = Enum.ScaleType.Slice
+    Shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+
+    addToTheme('Shadow', Shadow)
+
+    UIPadding_1.Parent = Shadow
+    UIPadding_1.PaddingBottom = UDim.new(0,5)
+    UIPadding_1.PaddingLeft = UDim.new(0,5)
+    UIPadding_1.PaddingRight = UDim.new(0,5)
+    UIPadding_1.PaddingTop = UDim.new(0,5)
+
+    Background_1.Name = "Background"
+    Background_1.Parent = Shadow
+    Background_1.AnchorPoint = Vector2.new(0.5, 0.5)
+    Background_1.BackgroundColor3 = themes[IsTheme].Background
+    Background_1.BorderColor3 = Color3.fromRGB(0,0,0)
+    Background_1.BorderSizePixel = 0
+    Background_1.Position = UDim2.new(0.5, 0,0.5, 0)
+    Background_1.Size = UDim2.new(1, 0,1, 0)
+    Background_1.ClipsDescendants = true
+    Background_1.GroupTransparency = 1
+
+    addToTheme('Background', Background_1)
+
+    UICorner_1.Parent = Background_1
+    UICorner_1.CornerRadius = UDim.new(0,6)
+
+    Frame_1.Parent = Background_1
+    Frame_1.AnchorPoint = Vector2.new(0, 1)
+    Frame_1.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    Frame_1.BackgroundTransparency = 0.8999999761581421
+    Frame_1.BorderColor3 = Color3.fromRGB(0,0,0)
+    Frame_1.BorderSizePixel = 0
+    Frame_1.Position = UDim2.new(0, 0,1, 0)
+    Frame_1.Size = UDim2.new(1, 0,0, 4)
+
+    Text_1.Name = "Text"
+    Text_1.Parent = Background_1
+    Text_1.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    Text_1.BackgroundTransparency = 1
+    Text_1.BorderColor3 = Color3.fromRGB(0,0,0)
+    Text_1.BorderSizePixel = 0
+    Text_1.Size = UDim2.new(1, 0,1, 0)
+
+    UIPadding_2.Parent = Text_1
+    UIPadding_2.PaddingBottom = UDim.new(0,5)
+    UIPadding_2.PaddingLeft = UDim.new(0,5)
+    UIPadding_2.PaddingRight = UDim.new(0,5)
+    UIPadding_2.PaddingTop = UDim.new(0,5)
+
+    Title_1.Name = "Title"
+    Title_1.Parent = Text_1
+    Title_1.AutomaticSize = Enum.AutomaticSize.Y
+    Title_1.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    Title_1.BackgroundTransparency = 1
+    Title_1.BorderColor3 = Color3.fromRGB(0,0,0)
+    Title_1.BorderSizePixel = 0
+    Title_1.Size = UDim2.new(1, 0,0, 0)
+    Title_1.Font = Enum.Font.GothamBold
+    Title_1.Text = tostring(Title)
+    Title_1.TextColor3 = themes[IsTheme]['Text & Icon']
+    Title_1.TextSize = 12
+    Title_1.TextWrapped = true
+    Title_1.RichText = true
+    Title_1.TextXAlignment = Enum.TextXAlignment.Left
+    Title_1.TextYAlignment = Enum.TextYAlignment.Top
+
+    addToTheme('Text & Icon', Title_1)
+
+    UIListLayout_1.Parent = Text_1
+    UIListLayout_1.Padding = UDim.new(0,3)
+    UIListLayout_1.SortOrder = Enum.SortOrder.LayoutOrder
+
+    Description_1.Name = "Description"
+    Description_1.Parent = Text_1
+    Description_1.AutomaticSize = Enum.AutomaticSize.Y
+    Description_1.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    Description_1.BackgroundTransparency = 1
+    Description_1.BorderColor3 = Color3.fromRGB(0,0,0)
+    Description_1.BorderSizePixel = 0
+    Description_1.LayoutOrder = 2
+    Description_1.Size = UDim2.new(1, 0,0, 0)
+    Description_1.Font = Enum.Font.GothamBold
+    Description_1.Text = tostring(Desc)
+    Description_1.TextColor3 = themes[IsTheme]['Text & Icon']
+    Description_1.TextSize = 10
+    Description_1.TextTransparency = 0.5
+    Description_1.TextWrapped = true
+    Description_1.RichText = true
+    Description_1.TextXAlignment = Enum.TextXAlignment.Left
+    Description_1.TextYAlignment = Enum.TextYAlignment.Top
+    Description_1.Visible = false
+
+    addToTheme('Text & Icon', Description_1)
+
+    Frame_2.Parent = Text_1
+    Frame_2.BackgroundColor3 = themes[IsTheme]['Text & Icon']
+    Frame_2.BackgroundTransparency = 0.9
+    Frame_2.BorderColor3 = Color3.fromRGB(0,0,0)
+    Frame_2.BorderSizePixel = 0
+    Frame_2.LayoutOrder = 1
+    Frame_2.Size = UDim2.new(1, 0,0, 1)
+    Frame_2.Visible = false
+
+    addToTheme('Text & Icon', Frame_2)
+
+    if Desc and Desc ~= '' then
+        Description_1.Visible = true
+        Frame_2.Visible = true
+    end
+
+    ButtonFrame.Name = "ButtonFrame"
+    ButtonFrame.Parent = Text_1
+    ButtonFrame.LayoutOrder = 3
+    ButtonFrame.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    ButtonFrame.BackgroundTransparency = 1
+    ButtonFrame.BorderColor3 = Color3.fromRGB(0,0,0)
+    ButtonFrame.BorderSizePixel = 0
+    ButtonFrame.Size = UDim2.new(1, 0,0, 24)
+
+    UIListLayout_2.Parent = ButtonFrame
+    UIListLayout_2.Padding = UDim.new(0,5)
+    UIListLayout_2.FillDirection = Enum.FillDirection.Horizontal
+    UIListLayout_2.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    UIListLayout_2.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout_2.VerticalAlignment = Enum.VerticalAlignment.Center
+
+    AcceptBtn.Name = "AcceptBtn"
+    AcceptBtn.Parent = ButtonFrame
+    AcceptBtn.BackgroundColor3 = Color3.fromRGB(0, 188, 0)
+    AcceptBtn.BorderColor3 = Color3.fromRGB(0,0,0)
+    AcceptBtn.BorderSizePixel = 0
+    AcceptBtn.Size = UDim2.new(0, 60,0, 20)
+    AcceptBtn.Font = Enum.Font.GothamBold
+    AcceptBtn.Text = AcceptText
+    AcceptBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    AcceptBtn.TextSize = 10
+    AcceptBtn.LayoutOrder = 1
+
+    AcceptCorner.Parent = AcceptBtn
+    AcceptCorner.CornerRadius = UDim.new(0,4)
+
+    DeclineBtn.Name = "DeclineBtn"
+    DeclineBtn.Parent = ButtonFrame
+    DeclineBtn.BackgroundColor3 = Color3.fromRGB(226, 39, 6)
+    DeclineBtn.BorderColor3 = Color3.fromRGB(0,0,0)
+    DeclineBtn.BorderSizePixel = 0
+    DeclineBtn.Size = UDim2.new(0, 60,0, 20)
+    DeclineBtn.Font = Enum.Font.GothamBold
+    DeclineBtn.Text = DeclineText
+    DeclineBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    DeclineBtn.TextSize = 10
+    DeclineBtn.LayoutOrder = 2
+
+    DeclineCorner.Parent = DeclineBtn
+    DeclineCorner.CornerRadius = UDim.new(0,4)
+
+    local closed = false
+
+    local function updateSize()
+        task.defer(function()
+            local newSize = UIListLayout_1.AbsoluteContentSize.Y + 28
+            if Shadow.Size.Y.Offset ~= newSize then
+                Shadow.Size = UDim2.new(0, 180, 0, newSize)
+            end
+        end)
+    end
+
+    delay(.1, updateSize)
+    UIListLayout_1:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSize)
+
+    local function closeNotify(callback)
+        if closed then return end
+        closed = true
+        local f = tw({
+            v = Background_1,
+            t = 0.15,
+            s = Enum.EasingStyle.Linear,
+            d = "InOut",
+            g = {
+                Size = UDim2.new(1, 0,1, 0) - UDim2.fromOffset(5, 5),
+                GroupTransparency = 1
+            }
+        })
+        f:Play()
+        f.Completed:Connect(function()
+            Shadow.ImageTransparency = 1
+            local g = tw({
+                v = Shadow,
+                t = 0.15,
+                s = Enum.EasingStyle.Exponential,
+                d = "InOut",
+                g = { Size = UDim2.new(0, 180,0, 0) }
+            })
+            g:Play()
+            g.Completed:Connect(function()
+                Shadow:Destroy()
+            end)
+        end)
+        pcall(callback)
+    end
+
+    AcceptBtn.MouseButton1Click:Connect(function()
+        closeNotify(OnAccept)
+    end)
+
+    DeclineBtn.MouseButton1Click:Connect(function()
+        closeNotify(OnDecline)
+    end)
+
+    local g = tw({
+        v = Shadow,
+        t = 0.15,
+        s = Enum.EasingStyle.Exponential,
+        d = "InOut",
+        g = { Size = UDim2.new(0, 180,0, 55) }
+    })
+    g:Play()
+    g.Completed:Wait()
+    tw({
+        v = Background_1,
+        t = 0.15,
+        s = Enum.EasingStyle.Linear,
+        d = "InOut",
+        g = {
+            Size = UDim2.new(1, 0,1, 0),
+            GroupTransparency = 0.3
+        }
+    }):Play()
+
+    task.spawn(function()
+        for i = Time, 1, -1 do
+            if closed then return end
+            tw({v = Frame_1, t = 0.15, s = Enum.EasingStyle.Exponential, d = "Out", g = {Size = UDim2.new(i / Time, 0,0, 4)}}):Play()
+            task.wait(1)
+        end
+        if not closed then
+            closeNotify(OnDecline)
+        end
+    end)
+end
+
 	function Tabs:Dialog(p)
 		if Shadow_1:FindFirstChild('Dialog') then
 			return
@@ -5438,7 +5747,7 @@ end
 			if not firsttime then
 				firsttime = true
 				Tabs:Notify({
-					Title = 'Lost',
+					Title = 'Worky',
 					Desc = 'Press the <font color="#FF77A5" size="14">('..tostring(Keybind):gsub("Enum.KeyCode.", "")..')</font> button to hide and show the UI',
 					Time = 10
 				})
