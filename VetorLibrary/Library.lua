@@ -17,7 +17,7 @@ local SoundService = GetService("SoundService")
 local LocalPlayer = Players.LocalPlayer
 
 local Library = {
-	Version = "1.0.2",
+	Version = "1.0.3",
 	Toggles = {},        
 	ToggleStates = {},   
 	Flags = {},          
@@ -161,6 +161,10 @@ local function Create(className, props, children)
 	end
 	instance.Parent = parent
 	return instance
+end
+
+function SetTransparency(v)
+	Library.Theme.BackgroundTransparency = v
 end
 
 local function Corner(radius)
