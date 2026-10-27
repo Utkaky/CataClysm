@@ -163,14 +163,15 @@ local function Create(className, props, children)
 	return instance
 end
 
-function SetTransparency(valor)
-    valor = math.clamp(tonumber(valor) or 0, 0, 1)
-    Library.Theme.BackgroundTransparency = valor
+function Library:SetTransparency(value)
+	value = tonumber(value)
+	assert(value and value >= 0 and value <= 1, "[Vetor] Background transparency must be between 0 and 1")
+	self.Theme.BackgroundTransparency = value
 
-    for _, window in ipairs(Library.Windows) do
-        window.Theme.BackgroundTransparency = valor
-        window.Main.BackgroundTransparency = valor
-    end
+	for _, window in ipairs(self.Windows) do
+		window.Theme.BackgroundTransparency = value
+		window.Main.BackgroundTransparency = value
+	end
 end
 
 local function Corner(radius)
