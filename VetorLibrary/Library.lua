@@ -907,6 +907,20 @@ end
 local Element = {}
 Element.__index = Element
 
+local function SetElementVisibility(element, visible)
+	assert(type(visible) == "boolean", "[Vetor] SetVisibility expects a boolean")
+	if element._destroyed then
+		return element
+	end
+	element.Visible = visible
+	element.Frame.Visible = visible
+	return element
+end
+
+function Element:SetVisibility(visible)
+	return SetElementVisibility(self, visible)
+end
+
 function Element:OnChange(callback)
 	return self.Changed:Connect(callback)
 end
@@ -2027,10 +2041,15 @@ function Tab:AddSection(cfg)
 	}, { Padding(4, 0, 0, 0) })
 	return setmetatable({
 		Window = self.Window,
+		Frame = holder,
 		Holder = holder,
 		Scroller = self.Scroller,
 		_order = 0,
 	}, Section)
+end
+
+function Section:SetVisibility(visible)
+	return SetElementVisibility(self, visible)
 end
 
 function Tab:_setActive(active, instant)
