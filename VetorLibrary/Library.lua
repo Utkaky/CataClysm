@@ -17,7 +17,7 @@ local SoundService = GetService("SoundService")
 local LocalPlayer = Players.LocalPlayer
 
 local Library = {
-	Version = "1.0.0",
+	Version = "1.0.1",
 	Toggles = {},        
 	ToggleStates = {},   
 	Flags = {},          
@@ -56,12 +56,12 @@ do
 		return (typeof(getgenv) == "function" and getgenv()) or _G
 	end)
 	if ok and type(env) == "table" then
-		local previous = env.__NovaUILibrary
+		local previous = env.__VetorLibrary
 		if type(previous) == "table" and type(previous.Destroy) == "function" then
 			pcall(previous.Destroy, previous)
 		end
 		pcall(function()
-			env.__NovaUILibrary = Library
+			env.__VetorLibrary = Library
 		end)
 	end
 end
@@ -227,7 +227,7 @@ function Signal.new()
 end
 
 function Signal:Connect(callback)
-	assert(type(callback) == "function", "[NovaUI] O listener precisa ser uma função")
+	assert(type(callback) == "function", "[Vetor] Need To be a Function")
 	local connection = setmetatable({ Fn = callback, Connected = true, _signal = self }, Connection)
 	table.insert(self._list, connection)
 	return connection
@@ -320,7 +320,7 @@ local function LoadLucide()
 		lucideState = "loaded"
 	else
 		lucideState = "failed"
-		warn("[NovaUI] Não foi possível carregar os ícones Lucide (" .. tostring(result) .. "). Ícones por nome ficarão indisponíveis.")
+		warn("[Vetor] Failed To Load Lucide Icons (" .. tostring(result) .. "). Icons Has Been Disabled in Instance.")
 	end
 end
 
@@ -415,7 +415,7 @@ local function ParseKey(key)
 		if ok and result then
 			return result
 		end
-		warn("[NovaUI] Tecla inválida: " .. key)
+		warn("[Vetor] Invalid Bind: " .. key)
 	end
 	return nil
 end
@@ -945,7 +945,7 @@ local function RegisterFlag(element, flag)
 		return
 	end
 	if Library.Flags[flag] and Library.Flags[flag] ~= element then
-		warn(string.format("[NovaUI] Flag duplicada '%s': o registro anterior foi substituído.", flag))
+		warn(string.format("[Vetor] Dual Flag Found '%s': Logs Remake.", flag))
 	end
 	Library.Flags[flag] = element
 end
@@ -1208,7 +1208,7 @@ function Container:AddToggle(cfg)
 	end))
 
 	if Library.Toggles[flag] and Library.Toggles[flag] ~= toggle then
-		warn(string.format("[NovaUI] Flag de toggle duplicada '%s': o registro anterior foi substituído.", flag))
+		warn(string.format("[Vetor] Flag de toggle duplicada '%s': o registro anterior foi substituído.", flag))
 	end
 	Library.Toggles[flag] = toggle
 	Library.ToggleStates[flag] = false
@@ -1259,7 +1259,7 @@ function Container:AddSlider(cfg)
 	local min = tonumber(cfg.Min) or 0
 	local max = tonumber(cfg.Max) or 100
 	if max <= min then
-		warn(string.format("[NovaUI] Slider '%s': Max deve ser maior que Min. Ajustando.", name))
+		warn(string.format("[Vetor] Slider '%s': Max deve ser maior que Min. Ajustando.", name))
 		max = min + 1
 	end
 	local increment = tonumber(cfg.Increment) or 1
@@ -1566,7 +1566,7 @@ function Dropdown:Set(value, silent)
 	if value ~= nil then
 		value = tostring(value)
 		if not self:_find(value) then
-			warn(string.format("[NovaUI] Dropdown '%s': opção '%s' não existe.", tostring(self.Name), value))
+			warn(string.format("[Vetor] Dropdown '%s': opção '%s' não existe.", tostring(self.Name), value))
 			return
 		end
 	end
