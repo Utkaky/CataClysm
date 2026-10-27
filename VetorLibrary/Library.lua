@@ -1,24 +1,3 @@
---!nonstrict
---[[
-	NovaUI  -  UI Library para Roblox (Luau), API no estilo da Orion Library
-	Versão 1.0.0
-
-	Uso rápido:
-		local Library = loadstring(readfile("NovaUI.lua"))()
-		local Window  = Library:MakeWindow({ Name = "Minha UI", Icon = "sparkles" })
-		local Tab     = Window:MakeTab({ Name = "Main", Icon = "heart" })
-		local Section = Tab:AddSection({ Name = "Settings" })
-		Section:AddToggle({ Name = "Exemplo", Default = false, Flag = "Exemplo" })
-
-	Estados:
-		Library.Toggles.Flag          -> objeto da toggle  (.Value é o booleano ao vivo, :OnChange(fn))
-		Library.ToggleStates.Flag     -> booleano puro, sempre atualizado
-		Library.Flags.Flag            -> objeto de qualquer elemento que tenha Flag
-]]
-
----------------------------------------------------------------------
--- Serviços / ambiente
----------------------------------------------------------------------
 local cloneref = (typeof(cloneref) == "function" and cloneref) or function(instance)
 	return instance
 end
@@ -29,6 +8,7 @@ end
 
 local Players = GetService("Players")
 local UserInputService = GetService("UserInputService")
+local RunService = GetService("RunService")
 local TweenService = GetService("TweenService")
 local Lighting = GetService("Lighting")
 local Debris = GetService("Debris")
@@ -36,24 +16,21 @@ local HttpService = GetService("HttpService")
 local SoundService = GetService("SoundService")
 local LocalPlayer = Players.LocalPlayer
 
----------------------------------------------------------------------
--- Tabela pública
----------------------------------------------------------------------
 local Library = {
 	Version = "1.0.0",
-	Toggles = {},        -- [Flag] = objeto Toggle
-	ToggleStates = {},   -- [Flag] = booleano atual
-	Flags = {},          -- [Flag] = objeto de qualquer elemento com Flag
+	Toggles = {},        
+	ToggleStates = {},   
+	Flags = {},          
 	Windows = {},
-	Icons = {},          -- mapa Lucide: nome -> "rbxassetid://..."
-	CustomIcons = {},    -- o usuário pode registrar: Library.CustomIcons["meu-icone"] = "rbxassetid://123"
+	Icons = {},          
+	CustomIcons = {},    
 	IconsURL = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua",
 	Theme = {
 		Background = Color3.fromRGB(8, 8, 10),
 		BackgroundTransparency = 0.12,
-		Accent = Color3.fromRGB(255, 45, 60),      -- linha do cabeçalho e títulos de seção
-		Primary = Color3.fromRGB(124, 77, 255),    -- toggle ligada, slider, seleção
-		TabBar = Color3.fromRGB(84, 24, 230),      -- barra de abas (pílula)
+		Accent = Color3.fromRGB(255, 45, 60),      
+		Primary = Color3.fromRGB(124, 77, 255),    
+		TabBar = Color3.fromRGB(84, 24, 230),      
 		Element = Color3.fromRGB(22, 22, 28),
 		ElementHover = Color3.fromRGB(36, 36, 46),
 		ElementPress = Color3.fromRGB(16, 16, 20),
@@ -74,7 +51,6 @@ local Library = {
 	_notifyOrder = 0,
 }
 
--- Garante apenas uma instância carregada por vez.
 do
 	local ok, env = pcall(function()
 		return (typeof(getgenv) == "function" and getgenv()) or _G
@@ -90,11 +66,8 @@ do
 	end
 end
 
----------------------------------------------------------------------
--- Utilitários base
----------------------------------------------------------------------
 local HEADER_HEIGHT = 52
-local HEADER_TOTAL = HEADER_HEIGHT + 2 -- cabeçalho + linha de destaque
+local HEADER_TOTAL = HEADER_HEIGHT + 2 
 local DEFAULT_WINDOW_ICON = "sparkles"
 local DEFAULT_TAB_ICON = "layout-grid"
 local DEFAULT_NOTIFY_ICON = "bell"
@@ -117,7 +90,6 @@ local function Config(cfg, fallbackName)
 	return cfg
 end
 
--- Tween com atalho: duração 0 aplica as propriedades imediatamente.
 local function Tween(instance, props, duration, style, direction)
 	duration = duration or 0.25
 	if duration <= 0 then
@@ -230,9 +202,6 @@ local function CountDecimals(number)
 	return #text - dot
 end
 
----------------------------------------------------------------------
--- Signal (listeners de eventos, sem loops)
----------------------------------------------------------------------
 local Connection = {}
 Connection.__index = Connection
 
@@ -279,9 +248,6 @@ function Signal:Destroy()
 	table.clear(self._list)
 end
 
----------------------------------------------------------------------
--- Maid (limpeza de conexões / instâncias / funções)
----------------------------------------------------------------------
 local Maid = {}
 Maid.__index = Maid
 
@@ -315,9 +281,6 @@ function Maid:Clean()
 	end
 end
 
----------------------------------------------------------------------
--- Ícones (Lucide + assets personalizados)
----------------------------------------------------------------------
 local lucideState = "idle"
 
 local function HttpGet(url)
@@ -361,7 +324,6 @@ local function LoadLucide()
 	end
 end
 
--- Retorna (imagem, ehLucide). Aceita nome Lucide, "lucide:nome", id numérico, "rbxassetid://", "rbxthumb://".
 local function ResolveIcon(icon)
 	if icon == nil or icon == false or icon == "" then
 		return nil, false
@@ -395,7 +357,6 @@ function Library:GetIcon(name)
 	return (ResolveIcon(name))
 end
 
--- Cria um ícone (ImageLabel) ou, sem imagem disponível, um texto de fallback.
 local function MakeIcon(parent, icon, size, color, props, fallbackText)
 	local image, isLucide = ResolveIcon(icon)
 	local instance
@@ -429,9 +390,6 @@ local function IconTransparencyProperty(icon)
 	return icon:IsA("ImageLabel") and "ImageTransparency" or "TextTransparency"
 end
 
----------------------------------------------------------------------
--- Teclas
----------------------------------------------------------------------
 local KEY_ALIASES = {
 	LeftControl = "LCtrl", RightControl = "RCtrl", LeftShift = "LShift", RightShift = "RShift",
 	LeftAlt = "LAlt", RightAlt = "RAlt", Return = "Enter", Backspace = "Bksp", Escape = "Esc",
@@ -469,9 +427,6 @@ local function KeyText(key)
 	return KEY_ALIASES[key.Name] or key.Name
 end
 
----------------------------------------------------------------------
--- Sistema de binds (um único listener global para toda a library)
----------------------------------------------------------------------
 local BindCore = {}
 BindCore.__index = BindCore
 
@@ -535,7 +490,7 @@ local function EnsureInput()
 
 		local capture = Library._capture
 		if capture then
-			-- Modo de captura: toda tecla é consumida pelo menu de rebind.
+
 			pressed[key] = true
 			capture.OnKey(key)
 			return
@@ -545,7 +500,7 @@ local function EnsureInput()
 			return
 		end
 		if pressed[key] then
-			return -- uma única execução por pressionamento
+			return 
 		end
 		pressed[key] = true
 
@@ -588,7 +543,6 @@ local function EnsureInput()
 	end))
 end
 
--- Chip clicável que exibe a tecla e permite rebind (clique) ou limpar (botão direito / Backspace).
 local function BuildBindChip(window, parent, core, maid)
 	local theme = window.Theme
 	local chip = Create("TextButton", {
@@ -667,9 +621,6 @@ local function BuildBindChip(window, parent, core, maid)
 	return chip
 end
 
----------------------------------------------------------------------
--- Interação (hover / press) e arraste
----------------------------------------------------------------------
 local function BindInteraction(button, target, theme, maid)
 	local base = theme.ElementTransparency
 	local hoverTransparency = math.max(base - 0.12, 0)
@@ -692,7 +643,6 @@ local function BindInteraction(button, target, theme, maid)
 	end))
 end
 
--- Acompanha um arraste (mouse/touch) conectando listeners apenas enquanto o arraste existe.
 local function TrackDrag(startInput, onMove, onEnd)
 	local connections = {}
 	local finished = false
@@ -728,9 +678,6 @@ local function IsPointerDown(input)
 	return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
 end
 
----------------------------------------------------------------------
--- ScreenGui raiz (sempre por cima) e notificações
----------------------------------------------------------------------
 local function ResolveGuiParent()
 	if typeof(gethui) == "function" then
 		local ok, result = pcall(gethui)
@@ -883,7 +830,6 @@ function Library:Notify(cfg)
 		Parent = card,
 	})
 
-	-- Som opcional
 	if cfg.SoundID ~= nil and cfg.SoundID ~= "" then
 		local soundId = tostring(cfg.SoundID)
 		if soundId:match("^%d+$") then
@@ -926,9 +872,6 @@ function Library:Notify(cfg)
 	return handle
 end
 
----------------------------------------------------------------------
--- Elementos (base)
----------------------------------------------------------------------
 local Element = {}
 Element.__index = Element
 
@@ -1007,9 +950,6 @@ local function RegisterFlag(element, flag)
 	Library.Flags[flag] = element
 end
 
----------------------------------------------------------------------
--- Container (base de Tab e Section: métodos Add*)
----------------------------------------------------------------------
 local Container = {}
 Container.__index = Container
 
@@ -1044,7 +984,6 @@ local function NameLabel(frame, theme, text, widthOffset)
 	})
 end
 
------------------------------ Label -----------------------------
 function Container:AddLabel(cfg)
 	cfg = Config(cfg, "Label")
 	local theme = self.Window.Theme
@@ -1070,7 +1009,6 @@ function Label:Set(text)
 	self.Frame.Text = self.Value
 end
 
---------------------------- Paragraph ---------------------------
 function Container:AddParagraph(cfg, content)
 	if type(cfg) == "string" then
 		cfg = { Name = cfg, Content = content }
@@ -1122,7 +1060,6 @@ function Paragraph:SetContent(text)
 	self._content.Text = tostring(text)
 end
 
------------------------------ Button -----------------------------
 function Container:AddButton(cfg)
 	cfg = Config(cfg, "Button")
 	local theme = self.Window.Theme
@@ -1165,7 +1102,6 @@ function Button:SetName(text)
 	self._label.Text = self.Name
 end
 
------------------------------ Toggle -----------------------------
 function Toggle:_render(instant)
 	local theme = self.Window.Theme
 	local on = self.Value
@@ -1271,7 +1207,6 @@ function Container:AddToggle(cfg)
 		toggle:Toggle()
 	end))
 
-	-- Registro público (antes do Set para o estado já nascer sincronizado)
 	if Library.Toggles[flag] and Library.Toggles[flag] ~= toggle then
 		warn(string.format("[NovaUI] Flag de toggle duplicada '%s': o registro anterior foi substituído.", flag))
 	end
@@ -1283,7 +1218,7 @@ function Container:AddToggle(cfg)
 	if cfg.Callback then
 		toggle:OnChange(cfg.Callback)
 	end
-	toggle:Set(cfg.Default == true, true) -- estado inicial não é uma "mudança"
+	toggle:Set(cfg.Default == true, true) 
 	toggle:_render(true)
 
 	if cfg.Keybind ~= nil and cfg.Keybind ~= false then
@@ -1292,7 +1227,6 @@ function Container:AddToggle(cfg)
 	return toggle
 end
 
------------------------------ Slider -----------------------------
 function Slider:_render(duration)
 	local range = self.Max - self.Min
 	local ratio = range > 0 and (self.Value - self.Min) / range or 0
@@ -1433,7 +1367,6 @@ function Container:AddSlider(cfg)
 	return slider
 end
 
------------------------------ Dropdown -----------------------------
 local DROPDOWN_HEADER = 40
 local DROPDOWN_ROW = 30
 
@@ -1769,7 +1702,6 @@ function Container:AddDropdown(cfg)
 	return dropdown
 end
 
-------------------------- PlayersDropdown -------------------------
 PlayersDropdown.__index = function(self, key)
 	if key == "Value" then
 		return PlayersDropdown.Get(self)
@@ -1809,7 +1741,6 @@ local function FindPlayer(name)
 	return nil
 end
 
--- Retorna o Player selecionado; se ele saiu, limpa a seleção (sem referências inválidas).
 function PlayersDropdown:Get()
 	local name = self.Dropdown.Value
 	if not name then
@@ -1897,7 +1828,6 @@ function Container:AddPlayersDropdown(cfg)
 	return picker
 end
 
------------------------------- Bind ------------------------------
 function Bind:Set(key)
 	self._core:SetKey(key)
 end
@@ -1915,7 +1845,7 @@ function Container:AddBind(cfg)
 	local frame = self:_row(40)
 	local bind = NewElement(Bind, "Bind", window, frame, name, flag)
 	bind.Hold = cfg.Hold == true
-	bind.Triggered = Signal.new() -- dispara true ao pressionar (e false ao soltar, se Hold)
+	bind.Triggered = Signal.new() 
 	bind._maid:Add(function()
 		bind.Triggered:Destroy()
 	end)
@@ -1954,7 +1884,6 @@ function Container:AddBind(cfg)
 	return bind
 end
 
------------------------------ Textbox -----------------------------
 function Textbox:Set(text, silent)
 	text = tostring(text or "")
 	local changed = text ~= self.Value
@@ -2020,9 +1949,6 @@ function Container:AddTextbox(cfg)
 	return textbox
 end
 
----------------------------------------------------------------------
--- Section e Tab
----------------------------------------------------------------------
 local Section = setmetatable({}, { __index = Container })
 Section.__index = Section
 
@@ -2087,9 +2013,6 @@ function Tab:_setActive(active, instant)
 	end
 end
 
----------------------------------------------------------------------
--- Window
----------------------------------------------------------------------
 local Window = {}
 Window.__index = Window
 
@@ -2138,6 +2061,35 @@ function Window:_animateOut()
 	end
 end
 
+function Window:_setFreeMouse(enabled)
+	if enabled then
+		if not self._mouseState then
+			self._mouseState = {
+				Behavior = UserInputService.MouseBehavior,
+				IconEnabled = UserInputService.MouseIconEnabled,
+			}
+			self._mouseConnection = RunService.RenderStepped:Connect(function()
+				if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+					return
+				end
+				UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+				UserInputService.MouseIconEnabled = true
+			end)
+		end
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+		UserInputService.MouseIconEnabled = true
+	elseif self._mouseState then
+		if self._mouseConnection then
+			self._mouseConnection:Disconnect()
+			self._mouseConnection = nil
+		end
+		local mouseState = self._mouseState
+		self._mouseState = nil
+		UserInputService.MouseBehavior = mouseState.Behavior
+		UserInputService.MouseIconEnabled = mouseState.IconEnabled
+	end
+end
+
 function Window:SetVisible(state)
 	if self._destroyed or state == self.Visible then
 		return
@@ -2145,6 +2097,11 @@ function Window:SetVisible(state)
 	self.Visible = state
 	self._visibleToken += 1
 	local token = self._visibleToken
+	if state and self.FreeMouse then
+		self:_setFreeMouse(true)
+	else
+		self:_setFreeMouse(false)
+	end
 	if state then
 		self:_animateIn()
 	else
@@ -2308,6 +2265,7 @@ function Window:Close()
 		return
 	end
 	self._closing = true
+	self:_setFreeMouse(false)
 	self:_animateOut()
 	task.delay(0.25, function()
 		self:Destroy()
@@ -2319,6 +2277,7 @@ function Window:Destroy()
 		return
 	end
 	self._destroyed = true
+	self:_setFreeMouse(false)
 	for element in pairs(table.clone(self._elements)) do
 		element:Destroy()
 	end
@@ -2360,6 +2319,7 @@ function Library:MakeWindow(cfg)
 		Tabs = {},
 		ActiveTab = nil,
 		Visible = true,
+		FreeMouse = cfg.FreeMouse ~= false,
 		Minimized = false,
 		Maid = Maid.new(),
 		_elements = {},
@@ -2368,7 +2328,6 @@ function Library:MakeWindow(cfg)
 		_minimizeToken = 0,
 	}, Window)
 
-	-- Estrutura: Root (posição/tamanho) > Main (CanvasGroup com cantos, fade e escala)
 	window.Root = Create("Frame", {
 		Name = "Window",
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -2392,7 +2351,6 @@ function Library:MakeWindow(cfg)
 	})
 	window._scale = Create("UIScale", { Scale = 0.9, Parent = window.Main })
 
-	-- Brilho sutil estilo Acrylic (gradiente translúcido, sem blur real)
 	Create("Frame", {
 		Name = "Sheen",
 		Size = UDim2.fromScale(1, 1),
@@ -2410,7 +2368,6 @@ function Library:MakeWindow(cfg)
 		}),
 	})
 
-	-- Cabeçalho
 	local header = Create("Frame", {
 		Name = "Header",
 		Size = UDim2.new(1, 0, 0, HEADER_HEIGHT),
@@ -2481,7 +2438,6 @@ function Library:MakeWindow(cfg)
 		Parent = header,
 	})
 
-	-- Botões do cabeçalho
 	local closeButton = Create("TextButton", {
 		Name = "Close",
 		AnchorPoint = Vector2.new(1, 0.5),
@@ -2529,7 +2485,6 @@ function Library:MakeWindow(cfg)
 		window:SetMinimized(not window.Minimized)
 	end))
 
-	-- Linha de destaque
 	window._line = Create("Frame", {
 		Name = "AccentLine",
 		AnchorPoint = Vector2.new(0.5, 0),
@@ -2539,7 +2494,6 @@ function Library:MakeWindow(cfg)
 		Parent = window.Main,
 	})
 
-	-- Corpo (páginas + barra de abas)
 	window.Body = Create("Frame", {
 		Name = "Body",
 		Position = UDim2.fromOffset(0, HEADER_TOTAL),
@@ -2579,19 +2533,85 @@ function Library:MakeWindow(cfg)
 		Padding(8, 8, 4, 4),
 	})
 
-	-- Arraste pelo cabeçalho
+	local resizeHandle = Create("TextButton", {
+		Name = "ResizeHandle",
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, -6, 1, -6),
+		Size = UDim2.fromOffset(22, 22),
+		BackgroundTransparency = 1,
+		Text = "",
+		Active = true,
+		ZIndex = 10,
+		Parent = window.Main,
+	})
+	for index = 1, 3 do
+		Create("Frame", {
+			AnchorPoint = Vector2.new(1, 1),
+			Position = UDim2.new(1, -4 - (index - 1) * 4, 1, -4),
+			Size = UDim2.fromOffset(2, 7 + (index - 1) * 3),
+			Rotation = 45,
+			BackgroundColor3 = theme.SubText,
+			BackgroundTransparency = 0.15,
+			BorderSizePixel = 0,
+			ZIndex = 11,
+			Parent = resizeHandle,
+		})
+	end
+	window.Maid:Add(resizeHandle.InputBegan:Connect(function(input)
+		if not IsPointerDown(input) or window._resizeFinish then
+			return
+		end
+		local startMouse = Vector2.new(input.Position.X, input.Position.Y)
+		local startSize = Vector2.new(window._width, window._height)
+		local startTopLeft = window.Root.AbsolutePosition
+		local startPosition = window.Root.Position
+		window._resizeFinish = TrackDrag(input, function(position)
+			local viewport = window:_viewport()
+			local delta = Vector2.new(position.X, position.Y) - startMouse
+			local width = math.clamp(
+				startSize.X + delta.X,
+				260,
+				math.max(260, viewport.X - startTopLeft.X - 12)
+			)
+			local height = math.clamp(
+				startSize.Y + delta.Y,
+				200,
+				math.max(200, viewport.Y - startTopLeft.Y - 12)
+			)
+			local sizeDelta = Vector2.new(width, height) - startSize
+			window._baseSize = Vector2.new(width, height)
+			window._width, window._height = width, height
+			window.Body.Size = UDim2.new(1, 0, 0, height - HEADER_TOTAL)
+			window.Root.Size = UDim2.fromOffset(width, window.Minimized and HEADER_TOTAL or height)
+			window.Root.Position = UDim2.new(
+				startPosition.X.Scale,
+				startPosition.X.Offset + sizeDelta.X / 2,
+				startPosition.Y.Scale,
+				startPosition.Y.Offset + sizeDelta.Y / 2
+			)
+		end, function()
+			window._resizeFinish = nil
+		end)
+	end))
+
 	window.Maid:Add(header.InputBegan:Connect(function(input)
 		if not IsPointerDown(input) or window._dragFinish then
 			return
 		end
 		local startMouse = Vector2.new(input.Position.X, input.Position.Y)
 		local startCenter = window.Root.AbsolutePosition + window.Root.AbsoluteSize / 2
+		local startPosition = window.Root.Position
 		window._dragFinish = TrackDrag(input, function(position)
 			local viewport = window:_viewport()
 			local delta = Vector2.new(position.X, position.Y) - startMouse
 			local x = math.clamp(startCenter.X + delta.X, 40, math.max(40, viewport.X - 40))
 			local y = math.clamp(startCenter.Y + delta.Y, 30, math.max(30, viewport.Y - 30))
-			Tween(window.Root, { Position = UDim2.fromOffset(x, y) }, 0.06, Enum.EasingStyle.Linear)
+			window.Root.Position = UDim2.new(
+				startPosition.X.Scale,
+				startPosition.X.Offset + x - startCenter.X,
+				startPosition.Y.Scale,
+				startPosition.Y.Offset + y - startCenter.Y
+			)
 		end, function()
 			window._dragFinish = nil
 		end)
@@ -2600,16 +2620,23 @@ function Library:MakeWindow(cfg)
 		if window._dragFinish then
 			window._dragFinish()
 		end
+		if window._resizeFinish then
+			window._resizeFinish()
+		end
 	end)
 
-	-- Responsividade
 	window.Maid:Add(gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
 		window:_applyLayout()
 	end))
 	window:_applyLayout()
 
-	-- Tecla para mostrar/ocultar
-	local toggleKey = cfg.ToggleKey
+	local toggleKey = cfg.UiBind
+	if toggleKey == nil then
+		toggleKey = cfg.ToggleKey
+	end
+	if toggleKey == nil then
+		toggleKey = cfg.ToggleKeybind
+	end
 	if toggleKey == nil then
 		toggleKey = Enum.KeyCode.RightShift
 	end
@@ -2622,7 +2649,6 @@ function Library:MakeWindow(cfg)
 		})
 	end
 
-	-- Blur opcional (desfoca a cena inteira; use com moderação)
 	if cfg.Blur then
 		local ok, blur = pcall(function()
 			return Create("BlurEffect", { Name = RandomName(), Size = 0, Parent = Lighting })
@@ -2634,11 +2660,11 @@ function Library:MakeWindow(cfg)
 	end
 
 	table.insert(self.Windows, window)
+	window:_setFreeMouse(window.FreeMouse)
 	window:_animateIn()
 	return window
 end
 
--- Compatibilidade com scripts estilo Orion (OrionLib:Init()).
 function Library:Init()
 	return self
 end
