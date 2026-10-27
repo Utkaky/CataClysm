@@ -17,7 +17,7 @@ local SoundService = GetService("SoundService")
 local LocalPlayer = Players.LocalPlayer
 
 local Library = {
-	Version = "1.0.1",
+	Version = "1.0.2",
 	Toggles = {},        
 	ToggleStates = {},   
 	Flags = {},          
@@ -45,6 +45,7 @@ local Library = {
 	},
 	_binds = {},
 	_connections = {},
+	_pendingToggleChanges = {},
 	_capture = nil,
 	_gui = nil,
 	_notifyHolder = nil,
@@ -233,6 +234,10 @@ function Signal:Connect(callback)
 	return connection
 end
 
+function Signal:OnChange(callback)
+	return self:Connect(callback)
+end
+
 function Signal:Fire(...)
 	for _, connection in ipairs(table.clone(self._list)) do
 		if connection.Connected then
@@ -247,6 +252,20 @@ function Signal:Destroy()
 	end
 	table.clear(self._list)
 end
+
+setmetatable(Library.Toggles, {
+	__index = function(_, flag)
+		if type(flag) ~= "string" then
+			return nil
+		end
+		local pending = Library._pendingToggleChanges[flag]
+		if not pending then
+			pending = Signal.new()
+			Library._pendingToggleChanges[flag] = pending
+		end
+		return pending
+	end,
+})
 
 local Maid = {}
 Maid.__index = Maid
@@ -1207,12 +1226,28 @@ function Container:AddToggle(cfg)
 		toggle:Toggle()
 	end))
 
-	if Library.Toggles[flag] and Library.Toggles[flag] ~= toggle then
+	local existingToggle = rawget(Library.Toggles, flag)
+	if existingToggle and existingToggle ~= toggle then
 		warn(string.format("[Vetor] Flag de toggle duplicada '%s': o registro anterior foi substituído.", flag))
 	end
 	Library.Toggles[flag] = toggle
 	Library.ToggleStates[flag] = false
 	Library.Flags[flag] = toggle
+	local pendingChanges = Library._pendingToggleChanges[flag]
+	if pendingChanges then
+		for _, connection in ipairs(table.clone(pendingChanges._list)) do
+			if connection.Connected then
+				local pendingIndex = table.find(pendingChanges._list, connection)
+				if pendingIndex then
+					table.remove(pendingChanges._list, pendingIndex)
+				end
+				connection._signal = toggle.Changed
+				table.insert(toggle.Changed._list, connection)
+				toggle._maid:Add(connection)
+			end
+		end
+		Library._pendingToggleChanges[flag] = nil
+	end
 
 	toggle:_render(true)
 	if cfg.Callback then
@@ -2679,6 +2714,10 @@ function Library:Destroy()
 	self._connections = {}
 	table.clear(self._binds)
 	self._capture = nil
+	for _, pending in pairs(self._pendingToggleChanges) do
+		pending:Destroy()
+	end
+	table.clear(self._pendingToggleChanges)
 	if self._gui then
 		self._gui:Destroy()
 		self._gui = nil
