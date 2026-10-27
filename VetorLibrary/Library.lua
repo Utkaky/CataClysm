@@ -17,7 +17,7 @@ local SoundService = GetService("SoundService")
 local LocalPlayer = Players.LocalPlayer
 
 local Library = {
-	Version = "1.0.3",
+	Version = "1.0.4",
 	Toggles = {},        
 	ToggleStates = {},   
 	Flags = {},          
@@ -163,16 +163,18 @@ local function Create(className, props, children)
 	return instance
 end
 
-function Library:SetTransparency(value)
-	value = tonumber(value)
-	assert(value and value >= 0 and value <= 1, "[Vetor] Background transparency must be between 0 and 1")
-	self.Theme.BackgroundTransparency = value
 
-	for _, window in ipairs(self.Windows) do
+-- Ui Custumization (v4)
+function Library:setBackgroundTransparency(value)
+	value = math.clamp(value, 0, 1)
+    Library.Theme.BackgroundTransparency = value
+
+	for _, window in ipairs(Library.Windows) do
 		window.Theme.BackgroundTransparency = value
-		window.Main.BackgroundTransparency = value
+        window.Main.BackgroundTransparency = value
 	end
 end
+
 
 local function Corner(radius)
 	return Create("UICorner", { CornerRadius = radius or UDim.new(0, 8) })
