@@ -163,8 +163,14 @@ local function Create(className, props, children)
 	return instance
 end
 
-function SetTransparency(v)
-	Library.Theme.BackgroundTransparency = v
+function SetTransparency(valor)
+    valor = math.clamp(tonumber(valor) or 0, 0, 1)
+    Library.Theme.BackgroundTransparency = valor
+
+    for _, window in ipairs(Library.Windows) do
+        window.Theme.BackgroundTransparency = valor
+        window.Main.BackgroundTransparency = valor
+    end
 end
 
 local function Corner(radius)
