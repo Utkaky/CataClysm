@@ -17,7 +17,7 @@ local SoundService = GetService("SoundService")
 local LocalPlayer = Players.LocalPlayer
 
 local Library = {
-	Version = "1.0.5",
+	Version = "1.0.6",
 	Toggles = {},        
 	ToggleStates = {},   
 	Flags = {},          
@@ -50,6 +50,110 @@ local Library = {
 	_gui = nil,
 	_notifyHolder = nil,
 	_notifyOrder = 0,
+}
+
+local function BuildThemePreset(overrides)
+	local theme = table.clone(Library.Theme)
+	for key, value in pairs(overrides) do
+		theme[key] = value
+	end
+	return theme
+end
+
+Library.ThemePresets = {
+	Default = BuildThemePreset({}),
+	Glass = BuildThemePreset({
+		Background = Color3.fromRGB(19, 24, 34),
+		BackgroundTransparency = 0.28,
+		Accent = Color3.fromRGB(190, 220, 255),
+		Primary = Color3.fromRGB(105, 165, 230),
+		TabBar = Color3.fromRGB(57, 91, 135),
+		Element = Color3.fromRGB(75, 91, 112),
+		ElementHover = Color3.fromRGB(100, 119, 143),
+		ElementPress = Color3.fromRGB(52, 66, 85),
+		ElementTransparency = 0.48,
+		ToggleOff = Color3.fromRGB(78, 91, 109),
+		SliderTrack = Color3.fromRGB(86, 103, 126),
+		Text = Color3.fromRGB(244, 248, 255),
+		SubText = Color3.fromRGB(190, 204, 222),
+		Stroke = Color3.fromRGB(218, 234, 255),
+		StrokeTransparency = 0.72,
+		Danger = Color3.fromRGB(255, 104, 119),
+	}),
+	Midnight = BuildThemePreset({
+		Background = Color3.fromRGB(9, 14, 25),
+		BackgroundTransparency = 0.06,
+		Accent = Color3.fromRGB(91, 156, 255),
+		Primary = Color3.fromRGB(53, 117, 230),
+		TabBar = Color3.fromRGB(27, 74, 160),
+		Element = Color3.fromRGB(18, 27, 43),
+		ElementHover = Color3.fromRGB(30, 43, 65),
+		ElementPress = Color3.fromRGB(12, 19, 32),
+		ToggleOff = Color3.fromRGB(44, 58, 80),
+		SliderTrack = Color3.fromRGB(37, 51, 72),
+		Stroke = Color3.fromRGB(120, 166, 235),
+		Danger = Color3.fromRGB(244, 83, 102),
+	}),
+	Ocean = BuildThemePreset({
+		Background = Color3.fromRGB(7, 20, 24),
+		BackgroundTransparency = 0.08,
+		Accent = Color3.fromRGB(67, 220, 196),
+		Primary = Color3.fromRGB(20, 174, 155),
+		TabBar = Color3.fromRGB(13, 118, 111),
+		Element = Color3.fromRGB(15, 36, 40),
+		ElementHover = Color3.fromRGB(25, 53, 57),
+		ElementPress = Color3.fromRGB(11, 28, 32),
+		ToggleOff = Color3.fromRGB(44, 70, 72),
+		SliderTrack = Color3.fromRGB(34, 65, 68),
+		Stroke = Color3.fromRGB(114, 204, 190),
+		Danger = Color3.fromRGB(255, 91, 107),
+	}),
+	Emerald = BuildThemePreset({
+		Background = Color3.fromRGB(12, 19, 16),
+		BackgroundTransparency = 0.08,
+		Accent = Color3.fromRGB(112, 220, 148),
+		Primary = Color3.fromRGB(57, 175, 101),
+		TabBar = Color3.fromRGB(36, 123, 70),
+		Element = Color3.fromRGB(23, 35, 28),
+		ElementHover = Color3.fromRGB(36, 51, 41),
+		ElementPress = Color3.fromRGB(17, 29, 22),
+		ToggleOff = Color3.fromRGB(55, 69, 59),
+		SliderTrack = Color3.fromRGB(44, 62, 49),
+		Stroke = Color3.fromRGB(153, 207, 165),
+		Danger = Color3.fromRGB(248, 91, 87),
+	}),
+	Rose = BuildThemePreset({
+		Background = Color3.fromRGB(24, 12, 19),
+		BackgroundTransparency = 0.08,
+		Accent = Color3.fromRGB(255, 112, 166),
+		Primary = Color3.fromRGB(218, 66, 126),
+		TabBar = Color3.fromRGB(154, 38, 91),
+		Element = Color3.fromRGB(42, 23, 34),
+		ElementHover = Color3.fromRGB(59, 33, 47),
+		ElementPress = Color3.fromRGB(33, 17, 27),
+		ToggleOff = Color3.fromRGB(76, 51, 65),
+		SliderTrack = Color3.fromRGB(68, 42, 57),
+		Stroke = Color3.fromRGB(226, 151, 181),
+		Danger = Color3.fromRGB(255, 74, 85),
+	}),
+	Light = BuildThemePreset({
+		Background = Color3.fromRGB(239, 242, 248),
+		BackgroundTransparency = 0,
+		Accent = Color3.fromRGB(75, 82, 106),
+		Primary = Color3.fromRGB(93, 92, 224),
+		TabBar = Color3.fromRGB(79, 76, 194),
+		Element = Color3.fromRGB(222, 226, 236),
+		ElementHover = Color3.fromRGB(210, 216, 229),
+		ElementPress = Color3.fromRGB(202, 208, 222),
+		ElementTransparency = 0,
+		ToggleOff = Color3.fromRGB(166, 173, 192),
+		SliderTrack = Color3.fromRGB(185, 192, 209),
+		Text = Color3.fromRGB(32, 36, 48),
+		SubText = Color3.fromRGB(94, 101, 119),
+		Stroke = Color3.fromRGB(139, 146, 165),
+		StrokeTransparency = 0.55,
+		Danger = Color3.fromRGB(210, 53, 67),
+	}),
 }
 
 do
@@ -985,6 +1089,7 @@ local Button = ElementClass()
 local Label = ElementClass()
 local Paragraph = ElementClass()
 local Textbox = ElementClass()
+local ColorPicker = ElementClass()
 
 local function RegisterFlag(element, flag)
 	if not flag then
@@ -2030,6 +2135,197 @@ function Container:AddTextbox(cfg)
 	return textbox
 end
 
+function ColorPicker:Set(color, silent)
+	if self._destroyed then
+		return
+	end
+	assert(typeof(color) == "Color3", "[Vetor] ColorPicker:Set expects a Color3")
+	local changed = color ~= self.Value
+	self.Value = color
+	self._hue, self._saturation, self._value = color:ToHSV()
+	self._swatch.BackgroundColor3 = color
+	self._hueColor.BackgroundColor3 = Color3.fromHSV(self._hue, 1, 1)
+	self._svCursor.Position = UDim2.new(self._saturation, 0, 1 - self._value, 0)
+	self._hueCursor.Position = UDim2.new(self._hue, -1, 0, 0)
+	if changed and not silent then
+		self.Changed:Fire(color)
+	end
+end
+
+function ColorPicker:SetColor(color, silent)
+	return self:Set(color, silent)
+end
+
+function ColorPicker:Open()
+	if self._destroyed or self.IsOpen then
+		return
+	end
+	self.IsOpen = true
+	self._panel.Visible = true
+	Tween(self.Frame, { Size = UDim2.new(1, 0, 0, self._expandedHeight) }, 0.2)
+end
+
+function ColorPicker:Close()
+	if self._destroyed or not self.IsOpen then
+		return
+	end
+	self.IsOpen = false
+	Tween(self.Frame, { Size = UDim2.new(1, 0, 0, 40) }, 0.2)
+	task.delay(0.22, function()
+		if not self._destroyed and not self.IsOpen then
+			self._panel.Visible = false
+		end
+	end)
+end
+
+function Container:AddColorPicker(cfg)
+	cfg = Config(cfg, "Color")
+	local window, theme = self.Window, self.Window.Theme
+	local name = tostring(cfg.Name or "Color")
+	local flag = cfg.Flag and tostring(cfg.Flag) or nil
+	local frame = self:_row(40)
+	frame.ClipsDescendants = true
+	local picker = NewElement(ColorPicker, "ColorPicker", window, frame, name, flag)
+	picker.Value = typeof(cfg.Default) == "Color3" and cfg.Default or Color3.new(1, 1, 1)
+	picker._hue, picker._saturation, picker._value = picker.Value:ToHSV()
+	picker.IsOpen = false
+	picker._expandedHeight = 166
+
+	NameLabel(frame, theme, name, 70)
+	picker._swatch = Create("TextButton", {
+		Name = "Swatch",
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -12, 0, 20),
+		Size = UDim2.fromOffset(34, 22),
+		BackgroundColor3 = picker.Value,
+		AutoButtonColor = false,
+		ZIndex = 3,
+		Parent = frame,
+	}, { Corner(UDim.new(0, 6)), Stroke(theme) })
+	picker._panel = Create("Frame", {
+		Name = "ColorPicker",
+		Position = UDim2.fromOffset(8, 42),
+		Size = UDim2.new(1, -16, 0, 116),
+		BackgroundTransparency = 1,
+		Visible = false,
+		Parent = frame,
+	})
+
+	picker._sv = Create("Frame", {
+		Name = "SaturationValue",
+		Position = UDim2.fromOffset(0, 0),
+		Size = UDim2.new(1, -4, 0, 82),
+		BackgroundColor3 = Color3.fromHSV(picker._hue, 1, 1),
+		ClipsDescendants = true,
+		Active = true,
+		Parent = picker._panel,
+	}, { Corner(UDim.new(0, 5)) })
+	Create("Frame", {
+		Name = "WhiteGradient",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		Parent = picker._sv,
+	}, {
+		Create("UIGradient", {
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 0),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+		}),
+	})
+	Create("Frame", {
+		Name = "BlackGradient",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Color3.new(0, 0, 0),
+		Parent = picker._sv,
+	}, {
+		Create("UIGradient", {
+			Rotation = 90,
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(1, 0),
+			}),
+		}),
+	})
+	picker._svCursor = Create("Frame", {
+		Name = "Cursor",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(picker._saturation, 0, 1 - picker._value, 0),
+		Size = UDim2.fromOffset(10, 10),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		ZIndex = 3,
+		Parent = picker._sv,
+	}, { Corner(PILL), Stroke(theme, Color3.fromRGB(25, 25, 25), 0.1, 1.5) })
+
+	local hueColors = {}
+	for index = 0, 6 do
+		table.insert(hueColors, ColorSequenceKeypoint.new(index / 6, Color3.fromHSV(index / 6, 1, 1)))
+	end
+	picker._hueBar = Create("Frame", {
+		Name = "Hue",
+		Position = UDim2.new(0, 0, 0, 92),
+		Size = UDim2.new(1, -4, 0, 14),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		Active = true,
+		Parent = picker._panel,
+	}, { Corner(PILL), Create("UIGradient", { Color = ColorSequence.new(hueColors) }) })
+	picker._hueColor = picker._sv
+	picker._hueCursor = Create("Frame", {
+		Name = "HueCursor",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(picker._hue, -1, 0, 0),
+		Size = UDim2.fromOffset(2, 14),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		ZIndex = 3,
+		Parent = picker._hueBar,
+	}, { Corner(PILL), Stroke(theme, Color3.fromRGB(25, 25, 25), 0.1, 1) })
+
+	local function updateColor()
+		picker:Set(Color3.fromHSV(picker._hue, picker._saturation, picker._value))
+	end
+	local function updateSV(position)
+		picker._saturation = math.clamp((position.X - picker._sv.AbsolutePosition.X) / math.max(picker._sv.AbsoluteSize.X, 1), 0, 1)
+		picker._value = 1 - math.clamp((position.Y - picker._sv.AbsolutePosition.Y) / math.max(picker._sv.AbsoluteSize.Y, 1), 0, 1)
+		updateColor()
+	end
+	local function updateHue(position)
+		picker._hue = math.clamp((position.X - picker._hueBar.AbsolutePosition.X) / math.max(picker._hueBar.AbsoluteSize.X, 1), 0, 1)
+		updateColor()
+	end
+	local function trackPointer(target, callback)
+		picker._maid:Add(target.InputBegan:Connect(function(input)
+			if not IsPointerDown(input) then
+				return
+			end
+			callback(input.Position)
+			picker._dragFinish = TrackDrag(input, callback, function()
+				picker._dragFinish = nil
+			end)
+		end))
+	end
+	trackPointer(picker._sv, updateSV)
+	trackPointer(picker._hueBar, updateHue)
+	picker._maid:Add(picker._swatch.MouseButton1Click:Connect(function()
+		if picker.IsOpen then
+			picker:Close()
+		else
+			picker:Open()
+		end
+	end))
+	picker._maid:Add(function()
+		if picker._dragFinish then
+			picker._dragFinish()
+		end
+	end)
+
+	RegisterFlag(picker, flag)
+	if cfg.Callback then
+		picker:OnChange(cfg.Callback)
+	end
+	picker:Set(picker.Value, true)
+	return picker
+end
+
 local Section = setmetatable({}, { __index = Container })
 Section.__index = Section
 
@@ -2126,6 +2422,114 @@ function Window:_applyLayout()
 			math.clamp(position.Y.Offset, 40, math.max(40, viewport.Y - 40))
 		)
 	end
+end
+
+function Window:_applyTheme()
+	local theme = self.Theme
+	self.Main.BackgroundColor3 = theme.Background
+	self.Main.BackgroundTransparency = theme.BackgroundTransparency
+	self._title.TextColor3 = theme.Text
+	self._subtitle.TextColor3 = theme.SubText
+	if self._iconUsesTheme then
+		self._iconHolder.BackgroundColor3 = theme.Primary
+	end
+
+	for _, instance in ipairs(self.Main:GetDescendants()) do
+		if instance:IsA("UIStroke") then
+			instance.Color = theme.Stroke
+			instance.Transparency = theme.StrokeTransparency
+		elseif instance:IsA("ScrollingFrame") then
+			instance.ScrollBarImageColor3 = theme.Primary
+		elseif instance:IsA("Frame") and instance.Name == "Element" then
+			instance.BackgroundColor3 = theme.Element
+			instance.BackgroundTransparency = theme.ElementTransparency
+		elseif instance:IsA("Frame") and instance.Name == "AccentLine" then
+			instance.BackgroundColor3 = theme.Accent
+		elseif instance:IsA("Frame") and instance.Name == "TabBar" then
+			instance.BackgroundColor3 = theme.TabBar
+		elseif instance:IsA("TextLabel") then
+			if instance.Name == "Label" or instance.Name == "Selected" or instance.Name == "Value"
+				or instance.Name == "Subtitle" or instance.Name == "Description" or instance.Name == "Empty" then
+				instance.TextColor3 = theme.SubText
+			elseif instance.Name == "Title" and instance.TextSize <= 11 then
+				instance.TextColor3 = theme.Accent
+			else
+				instance.TextColor3 = theme.Text
+			end
+		elseif instance:IsA("TextBox") then
+			instance.TextColor3 = theme.Text
+			instance.PlaceholderColor3 = theme.SubText
+		elseif instance:IsA("TextButton") and instance.Name == "Close" then
+			instance.BackgroundColor3 = theme.Danger
+		end
+	end
+
+	for element in pairs(self._elements) do
+		if element.Kind == "Toggle" then
+			element:_render(true)
+		elseif element.Kind == "Slider" then
+			element._fill.BackgroundColor3 = theme.Primary
+			element._fill.Parent.BackgroundColor3 = theme.SliderTrack
+			element._valueLabel.TextColor3 = theme.SubText
+		elseif element.Kind == "Dropdown" then
+			element._list.ScrollBarImageColor3 = theme.Primary
+			element:_renderSelection(true)
+		elseif element.Kind == "PlayersDropdown" then
+			element.Dropdown._list.ScrollBarImageColor3 = theme.Primary
+			element.Dropdown:_renderSelection(true)
+		elseif element.Kind == "Textbox" then
+			element._input.TextColor3 = theme.Text
+			element._input.PlaceholderColor3 = theme.SubText
+			element._input.Parent.BackgroundColor3 = theme.ElementPress
+		elseif element.Kind == "Button" then
+			element._label.TextColor3 = theme.Text
+		elseif element.Kind == "Label" then
+			element.Frame.TextColor3 = theme.SubText
+		elseif element.Kind == "Paragraph" then
+			element._title.TextColor3 = theme.Text
+			element._content.TextColor3 = theme.SubText
+		end
+	end
+end
+
+function Library:SetTheme(name)
+	local preset = self.ThemePresets[name]
+	assert(type(preset) == "table", "[Vetor] Unknown theme preset: " .. tostring(name))
+	for key, value in pairs(preset) do
+		self.Theme[key] = value
+	end
+	for _, window in ipairs(self.Windows) do
+		for key, value in pairs(preset) do
+			window.Theme[key] = value
+		end
+		window:_applyTheme()
+	end
+	return self
+end
+
+function Library:SetThemeColor(key, color)
+	assert(typeof(self.Theme[key]) == "Color3", "[Vetor] Theme key is not a color: " .. tostring(key))
+	assert(typeof(color) == "Color3", "[Vetor] SetThemeColor expects a Color3")
+	self.Theme[key] = color
+	for _, window in ipairs(self.Windows) do
+		window.Theme[key] = color
+		window:_applyTheme()
+	end
+	return self
+end
+
+function Library:SetThemeTransparency(key, value)
+	assert(key == "BackgroundTransparency" or key == "ElementTransparency" or key == "StrokeTransparency",
+		"[Vetor] Invalid theme transparency key: " .. tostring(key))
+	value = tonumber(value)
+	assert(value ~= nil, "[Vetor] Theme transparency expects a number")
+	value = math.clamp(value, 0, 1)
+	self.Theme[key] = value
+	for _, window in ipairs(self.Windows) do
+		window.Theme[key] = value
+		window:_applyTheme()
+	end
+	return self
 end
 
 function Window:_animateIn()
@@ -2346,6 +2750,92 @@ function Window:MakeTab(cfg)
 	return tab
 end
 
+function Window:AddConfigTab()
+	if self._configTab then
+		return self._configTab
+	end
+
+	local library = self.Library
+	local tab = self:MakeTab({ Name = "Config", Icon = "settings" })
+	local appearance = tab:AddSection({ Name = "Appearance" })
+	local colors = tab:AddSection({ Name = "Custom Colors" })
+	local transparencySliders = {}
+	local colorPickers = {}
+	local presetNames = {}
+	for name in pairs(library.ThemePresets) do
+		table.insert(presetNames, name)
+	end
+	table.sort(presetNames)
+	table.insert(presetNames, "Custom")
+
+	local themeDropdown = appearance:AddDropdown({
+		Name = "Theme",
+		Options = presetNames,
+		Default = "Custom",
+		Callback = function(name)
+			if name == "Custom" then
+				return
+			end
+			library:SetTheme(name)
+			local preset = library.ThemePresets[name]
+			for key, slider in pairs(transparencySliders) do
+				slider:Set(math.floor(preset[key] * 100 + 0.5), true, true)
+			end
+			for key, picker in pairs(colorPickers) do
+				picker:Set(preset[key], true)
+			end
+		end,
+	})
+	self._configThemeDropdown = themeDropdown
+
+	for _, setting in ipairs({
+		{ Name = "Background transparency", Key = "BackgroundTransparency" },
+		{ Name = "Element transparency", Key = "ElementTransparency" },
+		{ Name = "Border transparency", Key = "StrokeTransparency" },
+	}) do
+		transparencySliders[setting.Key] = appearance:AddSlider({
+			Name = setting.Name,
+			Min = 0,
+			Max = 100,
+			Increment = 1,
+			ValueName = "%",
+			Default = math.floor(self.Theme[setting.Key] * 100 + 0.5),
+			Callback = function(value)
+				library:SetThemeTransparency(setting.Key, value / 100)
+				themeDropdown:Set("Custom", true)
+			end,
+		})
+	end
+
+	for _, key in ipairs({
+		"Background",
+		"Accent",
+		"Primary",
+		"TabBar",
+		"Element",
+		"ElementHover",
+		"ElementPress",
+		"ToggleOff",
+		"SliderTrack",
+		"Text",
+		"SubText",
+		"Stroke",
+		"Danger",
+	}) do
+		colorPickers[key] = colors:AddColorPicker({
+			Name = key,
+			Default = self.Theme[key],
+			Callback = function(color)
+				library:SetThemeColor(key, color)
+				themeDropdown:Set("Custom", true)
+			end,
+		})
+	end
+
+	self._configTab = tab
+	return tab
+end
+
 function Window:Close()
 	if self._destroyed or self._closing then
 		return
@@ -2480,6 +2970,8 @@ function Library:MakeWindow(cfg)
 		BackgroundTransparency = iconBackground and 0 or 1,
 		Parent = header,
 	}, { Corner(PILL) })
+	window._iconHolder = iconHolder
+	window._iconUsesTheme = cfg.IconBackground == nil
 	if iconImage then
 		local inner = iconIsLucide and 18 or 34
 		Create("ImageLabel", {
