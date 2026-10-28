@@ -17,7 +17,7 @@ local SoundService = GetService("SoundService")
 local LocalPlayer = Players.LocalPlayer
 
 local Library = {
-	Version = "1.0.4",
+	Version = "1.0.5",
 	Toggles = {},        
 	ToggleStates = {},   
 	Flags = {},          
@@ -1153,7 +1153,13 @@ function Toggle:_render(instant)
 	local on = self.Value
 	local duration = instant and 0 or 0.22
 	Tween(self._track, { BackgroundColor3 = on and theme.Primary or theme.ToggleOff }, duration)
-	Tween(self._knob, { Position = on and UDim2.new(1, -17, 0.5, 0) or UDim2.new(0, 3, 0.5, 0) }, duration, Enum.EasingStyle.Back)
+	if self.Window.UseCheckbox then
+		if self._knob then
+			Tween(self._knob, { [IconTransparencyProperty(self._knob)] = on and 0 or 1 }, duration)
+		end
+	else
+		Tween(self._knob, { Position = on and UDim2.new(1, -17, 0.5, 0) or UDim2.new(0, 3, 0.5, 0) }, duration, Enum.EasingStyle.Back)
+	end
 	Tween(self._label, { TextColor3 = on and theme.Text or theme.SubText }, duration)
 end
 
@@ -1234,19 +1240,32 @@ function Container:AddToggle(cfg)
 		Name = "Track",
 		AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, -12, 0.5, 0),
-		Size = UDim2.fromOffset(38, 20),
+		Size = window.UseCheckbox and UDim2.fromOffset(20, 20) or UDim2.fromOffset(38, 20),
 		BackgroundColor3 = theme.ToggleOff,
 		ZIndex = 2,
 		Parent = frame,
-	}, { Corner(PILL) })
-	toggle._knob = Create("Frame", {
-		Name = "Knob",
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 3, 0.5, 0),
-		Size = UDim2.fromOffset(14, 14),
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		Parent = toggle._track,
-	}, { Corner(PILL) })
+	}, {
+		Corner(window.UseCheckbox and UDim.new(0, 4) or PILL),
+		window.UseCheckbox and Stroke(theme) or nil,
+	})
+	if window.UseCheckbox then
+		toggle._knob = MakeIcon(toggle._track, "check", 14, Color3.new(1, 1, 1), {
+			Name = "Check",
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			ImageTransparency = 1,
+			ZIndex = 3,
+		})
+	else
+		toggle._knob = Create("Frame", {
+			Name = "Knob",
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.new(0, 3, 0.5, 0),
+			Size = UDim2.fromOffset(14, 14),
+			BackgroundColor3 = Color3.new(1, 1, 1),
+			Parent = toggle._track,
+		}, { Corner(PILL) })
+	end
 
 	BindInteraction(hit, frame, theme, toggle._maid)
 	toggle._maid:Add(hit.MouseButton1Click:Connect(function()
@@ -2387,6 +2406,7 @@ function Library:MakeWindow(cfg)
 		ActiveTab = nil,
 		Visible = true,
 		FreeMouse = cfg.FreeMouse ~= false,
+		UseCheckbox = cfg.UseCheckbox == true,
 		Minimized = false,
 		Maid = Maid.new(),
 		_elements = {},
