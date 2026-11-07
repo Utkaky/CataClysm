@@ -1,34 +1,65 @@
 # CataClysm
 
-CataClysm is a collection of Roblox Luau scripts and user-interface libraries. It includes game-specific utilities for FTAP as well as reusable interface components with different themes, controls, and configuration features.
+CataClysm is a collection of Roblox Luau scripts and standalone user-interface libraries. The repository brings together FTAP-related utilities and several UI frameworks with different components, themes, and configuration options.
 
-## Repository Contents
+## Repository Structure
 
-| Path | Description |
+```text
+Roblox/
+├── Games/
+│   └── FTAP/
+│       ├── keyboard.lua
+│       ├── Module
+│       ├── plots
+│       └── UnholdBlob.lua
+└── Librarys/
+    ├── BetterOrion/
+    │   ├── icons
+    │   └── Library.lua
+    ├── Obsidian/
+    │   ├── addons/
+    │   │   ├── SaveM.lua
+    │   │   └── ThemeM.lua
+    │   └── Library.lua
+    ├── Vetor/
+    │   └── Library.lua
+    └── Worky/
+        ├── assets
+        ├── documentation.md
+        └── Library.lua
+```
+
+`Librarys` is the directory name used in the repository.
+
+## Components
+
+### FTAP scripts
+
+The `Roblox/Games/FTAP/` folder contains scripts and supporting files for FTAP. `keyboard.lua` provides an on-screen keyboard interface, while `UnholdBlob.lua` contains a character and vehicle-seat interaction helper. Review each script and its dependencies before using it.
+
+### UI libraries
+
+The libraries are independent implementations; choose one that fits your project rather than treating them as a single framework.
+
+| Library | Overview |
 | --- | --- |
-| `Games/FTAP/` | FTAP-related scripts and supporting files. |
-| `Games/FTAP/keyboard.lua` | A draggable on-screen keyboard with key and mouse input buttons, plus minimize and close controls. |
-| `Games/FTAP/UnholdBlob.lua` | Use Blobman without need sit. |
-| `Librarys/BetterOrion/` | A themed Orion-style interface library and its icon resources. |
-| `Librarys/Obsidian/` | An interface library with supporting save and theme manager add-ons. |
-| `Librarys/Vetor/` | A Luau interface toolkit with controls, notifications, input bindings, and utility components. |
-| `Librarys/Worky/` | A customizable interface library with windows, tabs, themes, controls, notifications, and dialogs. |
-| `Librarys/Worky/documentation.md` | Usage reference and examples for the Worky library. |
-
-The `Librarys` directory name is retained as it appears in the repository.
+| **BetterOrion** | Orion-style interface library with theme and icon resources. |
+| **Obsidian** | Interface library with separate save-manager and theme-manager add-ons. |
+| **Vetor** | UI toolkit with controls, notifications, input bindings, and utility components. |
+| **Worky** | Customizable windows, tabs, themes, controls, notifications, and dialogs. See the [Worky documentation](Roblox/Librarys/Worky/documentation.md) for usage examples. |
 
 ## Getting Started
 
-1. Review the source and documentation for the component you intend to use.
-2. Select a library or script appropriate to your project; the UI libraries are separate implementations and are not designed to be loaded together as one framework.
-3. Run and test the code in a Roblox Luau environment where you have permission to use it.
+1. Browse `Roblox/Games/FTAP/` or `Roblox/Librarys/` and select the script or library you need.
+2. Read any component-specific documentation and check the source for dependencies and runtime assumptions.
+3. Use and test the code only in Roblox experiences and environments where you are authorized to do so.
 
-These files are source scripts rather than a packaged application. The repository does not currently define a shared installer or build process.
+This repository contains source files, not a packaged application. It does not define a shared installer, build process, or test suite.
 
 ## Runtime Requirements
 
-The code targets Roblox and Luau APIs, including Roblox services and GUI objects. Some scripts or library features may also rely on environment-specific capabilities such as `CoreGui` access, `loadstring`, HTTP requests, clipboard support, or filesystem functions. Availability varies by runtime, so review each source file and its dependencies before use.
+The code targets Roblox and Luau APIs, including Roblox services and GUI objects. Depending on the selected script or library, some features may also rely on environment-specific capabilities such as access to `CoreGui`, HTTP requests, clipboard support, or filesystem functions. These capabilities are not available in every runtime.
 
 ## Responsible Use
 
-Use these scripts only in experiences and environments where you are authorized to do so, and follow Roblox's terms and the rules of the experience. This project is not affiliated with or endorsed by Roblox.
+Follow Roblox's terms of use and the rules of the experience. Do not use these scripts to disrupt other users or access systems without authorization. This project is not affiliated with or endorsed by Roblox.
