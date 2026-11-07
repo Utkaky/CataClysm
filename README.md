@@ -59,7 +59,3 @@ This repository contains source files, not a packaged application. It does not d
 ## Runtime Requirements
 
 The code targets Roblox and Luau APIs, including Roblox services and GUI objects. Depending on the selected script or library, some features may also rely on environment-specific capabilities such as access to `CoreGui`, HTTP requests, clipboard support, or filesystem functions. These capabilities are not available in every runtime.
-
-## Responsible Use
-
-Follow Roblox's terms of use and the rules of the experience. Do not use these scripts to disrupt other users or access systems without authorization. This project is not affiliated with or endorsed by Roblox.
