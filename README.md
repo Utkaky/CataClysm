@@ -8,7 +8,7 @@ CataClysm is a collection of Roblox Luau scripts and user-interface libraries. I
 | --- | --- |
 | `Games/FTAP/` | FTAP-related scripts and supporting files. |
 | `Games/FTAP/keyboard.lua` | A draggable on-screen keyboard with key and mouse input buttons, plus minimize and close controls. |
-| `Games/FTAP/UnholdBlob.lua` | A character and vehicle-seat interaction helper for the FTAP scripts. |
+| `Games/FTAP/UnholdBlob.lua` | Use Blobman without need sit. |
 | `Librarys/BetterOrion/` | A themed Orion-style interface library and its icon resources. |
 | `Librarys/Obsidian/` | An interface library with supporting save and theme manager add-ons. |
 | `Librarys/Vetor/` | A Luau interface toolkit with controls, notifications, input bindings, and utility components. |
