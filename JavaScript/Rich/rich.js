@@ -1,12 +1,12 @@
 const { Client } = require("@xhayper/discord-rpc");
 
-const appID = "1568689589105856643";
-const projectName = "My Project";
+const appID = "1569037265169154089";
+const projectName = "CataClysm";
 const activity = "Working on a project";
-const largeIcon = "app_icon";
+const largeIcon = "dark";
 const largeIconText = projectName;
-const smallIcon = "";
-const smallIconText = "";
+const smallIcon = "dark";
+const smallIconText = "dark";
 
 const client = new Client({ clientId: appID });
 const startedAt = new Date();
