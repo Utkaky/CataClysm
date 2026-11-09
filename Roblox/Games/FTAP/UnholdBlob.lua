@@ -6,7 +6,7 @@ function unholdblob()
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not (hum and hrp) then return nil end
 
-    local inv = workspace:FindFirstChild(services.me.Name .. "SpawnedInToys")
+    local inv = workspace:FindFirstChild(game.Players.LocalPlayer.Name .. "SpawnedInToys")
     if not inv then return nil end
 
     local blobman = nil
@@ -25,7 +25,7 @@ function unholdblob()
         end)
         local waited = 0
         repeat
-            RunService.Heartbeat:Wait()
+            game:GetService("RunService").Heartbeat:Wait()
             waited = waited + 0.016
             for _, v in ipairs(inv:GetChildren()) do
                 if v.Name == "CreatureBlobman" then blobman = v; break end
@@ -51,8 +51,8 @@ function unholdblob()
     local firstExec = false
 
     while tick() - t < 6 do
-        if not unholdableBlobmanEnabled then return nil end
-        services.rse.Heartbeat:Wait()
+        --if not unholdableBlobmanEnabled then return nil end
+        game:GetService("RunService").Heartbeat:Wait()
 
         if not blobman or not blobman.Parent then return nil end
 
@@ -76,7 +76,7 @@ function unholdblob()
 
             if not firstExec then
                 pcall(function()
-                    services.rs.CharacterEvents.RagdollRemote:FireServer(hrp, math.huge)
+                    game.ReplicatedStorage.CharacterEvents.RagdollRemote:FireServer(hrp, math.huge)
                 end)
                 firstExec = true
             end
@@ -92,3 +92,4 @@ function unholdblob()
 
     return nil
 end
+unholdblob()
