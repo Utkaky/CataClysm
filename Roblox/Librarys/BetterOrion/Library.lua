@@ -77,7 +77,7 @@ local OrionLib = {
 
 -- Icons
 	local Icons = {}
-	local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/Utkaky/Main/refs/heads/main/SoundHub/icons.lua"))().assets
+	local LucideIcons = loadstring(game:HttpGet("https://raw.githubusercontent.com/Utkaky/CataClysm/refs/heads/main/Roblox/Librarys/BetterOrion/icons"))().assets
 
 -- Core
 	local Orion = Instance.new("ScreenGui")
